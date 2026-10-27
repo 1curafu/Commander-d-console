@@ -1,40 +1,76 @@
 using CommanderD.Services;
 
-namespace CommanderD.Commands
-{
-    public class MkDirCommand : AbstractCommand
-    {
-        private readonly IFileSystemService _fileSystemService;
+namespace CommanderD.Commands;
 
-        public MkDirCommand(IFileSystemService fileSystemService) 
-            : base("mkdir", "Creates a directory.")
+public class MkDirCommand : AbstractCommand
+{
+    private const string SyntaxMessage = "The syntax of the command is incorrect.";
+    private const string PathNotFoundMessage = "The system cannot find the path specified.";
+    private const string AccessDeniedMessage = "Access is denied.";
+
+    private readonly IFileSystemService fileSystemService;
+
+    public MkDirCommand(IFileSystemService fileSystemService)
+        : base("mkdir", "Creates a directory.")
+    {
+        this.fileSystemService = fileSystemService;
+    }
+
+    public override CommandResult Execute(CommandContext context)
+    {
+        if (context.Arguments.Length == 0)
         {
-            _fileSystemService = fileSystemService;
+            return CommandResult.Fail(SyntaxMessage);
         }
 
-        public override CommandResult Execute(CommandContext context)
+        List<string> errors = new List<string>();
+
+        foreach (string argument in context.Arguments)
         {
-            if (context.Arguments == null || context.Arguments.Count == 0)
+            string? error = CreateDirectory(argument.Trim('"'));
+
+            if (error != null)
             {
-                return CommandResult.Fail("The syntax of the command is incorrect.");
+                errors.Add(error);
+            }
+        }
+
+        if (errors.Count == 0)
+        {
+            return CommandResult.Ok();
+        }
+
+        return CommandResult.Fail(string.Join(Environment.NewLine, errors));
+    }
+
+    private string? CreateDirectory(string name)
+    {
+        if (name.Length == 0)
+        {
+            return SyntaxMessage;
+        }
+
+        try
+        {
+            string target = fileSystemService.ResolvePath(name);
+
+            if (fileSystemService.DirectoryExists(target))
+            {
+                return $"A subdirectory or file {name} already exists.";
             }
 
-            var dirName = context.Arguments[0];
-
-            try
-            {
-                if (_fileSystemService.DirectoryExists(dirName))
-                {
-                    return CommandResult.Fail($"A subdirectory or file {dirName} already exists.");
-                }
-
-                _fileSystemService.CreateDirectory(dirName);
-                return CommandResult.Ok(string.Empty);
-            }
-            catch
-            {
-                return CommandResult.Fail("The system cannot find the path specified.");
-            }
+            fileSystemService.CreateDirectory(target);
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return AccessDeniedMessage;
+        }
+        catch (Exception ex) when (ex is IOException
+                                   or ArgumentException
+                                   or NotSupportedException)
+        {
+            return PathNotFoundMessage;
         }
     }
 }

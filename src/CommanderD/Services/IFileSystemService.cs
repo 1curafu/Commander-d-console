@@ -9,4 +9,6 @@ public interface IFileSystemService
     bool DirectoryExists(string path);
 
     void ChangeDirectory(string path);
+
+    void CreateDirectory(string path);
 }
