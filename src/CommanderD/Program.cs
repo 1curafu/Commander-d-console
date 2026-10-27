@@ -1,4 +1,9 @@
+using CommanderD.Commands;
 using CommanderD.Shell;
 
-var shell = new CommandShell();
+CommandParser parser = new CommandParser();
+CommandFactory factory = new CommandFactory();
+CommandInvoker invoker = new CommandInvoker(parser, factory);
+CommandShell shell = new CommandShell(invoker);
+
 shell.Run();
