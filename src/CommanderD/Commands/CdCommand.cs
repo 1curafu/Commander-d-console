@@ -1,52 +1,46 @@
 using CommanderD.Services;
 
-namespace CommanderD.Commands
-{
-    public class CdCommand : AbstractCommand
-    {
-        private readonly IFileSystemService _fileSystemService;
+namespace CommanderD.Commands;
 
-        public CdCommand(IFileSystemService fileSystemService) 
-            : base("cd", "Changes the current working directory.")
+public class CdCommand : AbstractCommand
+{
+    private const string PathNotFoundMessage = "The system cannot find the path specified.";
+
+    private readonly IFileSystemService fileSystemService;
+
+    public CdCommand(IFileSystemService fileSystemService)
+        : base("cd", "Displays or changes the current directory.")
+    {
+        this.fileSystemService = fileSystemService;
+    }
+
+    public override CommandResult Execute(CommandContext context)
+    {
+        if (context.Arguments.Length == 0)
         {
-            _fileSystemService = fileSystemService;
+            return CommandResult.Ok(fileSystemService.CurrentDirectory);
         }
 
-        public override CommandResult Execute(CommandContext context)
+        string path = string.Join(" ", context.Arguments).Trim('"');
+
+        try
         {
-            if (context.Arguments == null || context.Arguments.Count == 0)
+            string target = fileSystemService.ResolvePath(path);
+
+            if (!fileSystemService.DirectoryExists(target))
             {
-                var currentDir = _fileSystemService.GetCurrentDirectory();
-                return CommandResult.Ok(currentDir);
+                return CommandResult.Fail(PathNotFoundMessage);
             }
 
-            var arg = context.Arguments[0];
-
-            if (arg.Equals("cd..", StringComparison.OrdinalIgnoreCase) || arg.Equals("cd..", StringComparison.OrdinalIgnoreCase))
-            {
-                arg = "..";
-            }
-            else if (arg.Equals("cd\\", StringComparison.OrdinalIgnoreCase))
-            {
-                arg = "\\";
-            }
-
-            try
-            {
-                if (_fileSystemService.DirectoryExists(arg) || arg == ".." || arg == "\\")
-                {
-                    _fileSystemService.ChangeDirectory(arg);
-                    return CommandResult.Ok(string.Empty);
-                }
-                else
-                {
-                    return CommandResult.Fail("The system cannot find the path specified.");
-                }
-            }
-            catch
-            {
-                return CommandResult.Fail("The system cannot find the path specified.");
-            }
+            fileSystemService.ChangeDirectory(target);
+            return CommandResult.Ok();
+        }
+        catch (Exception ex) when (ex is IOException
+                                   or UnauthorizedAccessException
+                                   or ArgumentException
+                                   or NotSupportedException)
+        {
+            return CommandResult.Fail(PathNotFoundMessage);
         }
     }
 }
