@@ -1,6 +1,6 @@
 # Testing
 
-Team D uses xUnit. The tests are in `tests/CommanderD.Tests`.
+Team D uses MSTest. The tests are in `tests/CommanderD.Tests`.
 
 ## Run
 
@@ -19,22 +19,28 @@ dotnet test
 
 Every acceptance criterion of the story gets at least one test in your test class.
 
-1. Write one `[Fact]` per criterion.
+1. Write one `[TestMethod]` per criterion.
 2. Arrange the fake services, call `Execute` with a `CommandContext`, check the `CommandResult`.
 3. Run `dotnet test` until it passes.
 
 ## Example
 
 ```csharp
-[Fact]
-public void Example_NoArgument_ShowsSyntaxMessage()
+[TestClass]
+public class ExampleCommandTests
 {
-    var command = new ExampleCommand(new FakeFileSystemService(), new FakeConsoleService());
-    var context = new CommandContext("example", "example", new List<string>());
+    [TestMethod]
+    public void Example_NoArgument_ShowsSyntaxMessage()
+    {
+        var command = new ExampleCommand();
+        var context = new CommandContext("example", new string[0]);
 
-    var result = command.Execute(context);
+        var result = command.Execute(context);
 
-    Assert.False(result.Success);
-    Assert.Equal("The syntax of the command is incorrect.", result.OutputMessage);
+        Assert.IsFalse(result.Success);
+        Assert.AreEqual("The syntax of the command is incorrect.", result.OutputMessage);
+    }
 }
 ```
+
+Several inputs for the same test: add `[DataRow(...)]` lines under `[TestMethod]` and give the method matching parameters. Compare arrays with `CollectionAssert.AreEqual`.
