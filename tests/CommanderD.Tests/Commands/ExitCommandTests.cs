@@ -12,7 +12,7 @@ public class ExitCommandTests
     
         var _commandResult = _exitCommand.Execute(_commandContext);
 
-        Assert.AreEqual(_commandResult.success, true);
-        Assert.AreEqual(_commandResult.shouldExit, true);
+        Assert.AreEqual(_commandResult.Success, true);
+        Assert.AreEqual(_commandResult.ShouldExit, true);
     }
 }
