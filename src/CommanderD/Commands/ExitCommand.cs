@@ -1,3 +1,5 @@
+using CommanderD.Shell;
+
 namespace CommanderD.Commands;
 
 public class ExitCommand : AbstractCommand
@@ -8,8 +10,8 @@ public class ExitCommand : AbstractCommand
     {
         
     }
-    public override CommandResult Execute(CommandContext context)
+    public override void Execute(CommandContext context)
     {
-        return CommandResult.Exit();
+        Environment.Exit(0);
     }
 }

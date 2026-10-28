@@ -1,3 +1,5 @@
+using CommanderD.Shell;
+
 namespace CommanderD.Commands;
 
 public class VerCommand : AbstractCommand
@@ -8,10 +10,10 @@ public class VerCommand : AbstractCommand
     {
         
     }
-    public override CommandResult Execute(CommandContext context)
+    public override void Execute(CommandContext context)
     {
         var version = Environment.OSVersion;
         var versionString = version.ToString();
-        return CommandResult.Ok(versionString);
+        OutputWriter.WriteLn(versionString);
     }
 }

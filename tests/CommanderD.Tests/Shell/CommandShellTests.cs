@@ -10,21 +10,21 @@ namespace CommanderD.Tests.Shell;
 [TestClass]
 public class CommandShellTests
 {
+
+    private static readonly IOutputWriter Writer = new TestOutputWriter();
     private static string RunShell(string input)
     {
         var factory = new CommandFactory();
-        factory.Register("hello", () => new FakeCommand("hello", CommandResult.Ok("hello-output")));
-        factory.Register("exit", () => new FakeCommand("exit", CommandResult.Exit()));
+        factory.Register("hello", () => new FakeCommand("hello"));
+        factory.Register("exit", () => new FakeCommand("exit"));
 
         var reader = new StringReader(input);
-        var writer = new StringWriter();
         Console.SetIn(reader);
-        Console.SetOut(writer);
 
-        var shell = new CommandShell(new CommandInvoker(new CommandParser(), factory));
+        var shell = new CommandShell(new CommandInvoker(new CommandParser(), factory, Writer));
         shell.Run();
 
-        return writer.ToString();
+        return Writer.output;
     }
 
     [TestMethod]
@@ -32,7 +32,7 @@ public class CommandShellTests
     {
         string output = RunShell("hello\n");
 
-        StringAssert.Contains(output, "hello-output");
+        StringAssert.Contains(output, "hello");
     }
 
     [TestMethod]
@@ -41,7 +41,7 @@ public class CommandShellTests
         string output = RunShell("foo\nhello\n");
 
         StringAssert.Contains(output, "'foo' is not recognized as an internal or external command, operable program or batch file.");
-        StringAssert.Contains(output, "hello-output");
+        StringAssert.Contains(output, "hello");
     }
 
     [TestMethod]
@@ -57,7 +57,7 @@ public class CommandShellTests
     {
         string output = RunShell("exit\nhello\n");
 
-        Assert.IsFalse(output.Contains("hello-output"));
+        Assert.IsFalse(output.Contains("hello"));
     }
 
     [TestMethod]
@@ -65,6 +65,6 @@ public class CommandShellTests
     {
         string output = RunShell("HELLO\n");
 
-        StringAssert.Contains(output, "hello-output");
+        StringAssert.Contains(output, "hello");
     }
 }

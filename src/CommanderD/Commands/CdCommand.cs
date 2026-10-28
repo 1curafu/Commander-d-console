@@ -1,4 +1,5 @@
 using CommanderD.Services;
+using CommanderD.Shell;
 
 namespace CommanderD.Commands;
 
@@ -14,11 +15,11 @@ public class CdCommand : AbstractCommand
         this.fileSystemService = fileSystemService;
     }
 
-    public override CommandResult Execute(CommandContext context)
+    public override void Execute(CommandContext context)
     {
         if (context.Arguments.Length == 0)
         {
-            return CommandResult.Ok(fileSystemService.CurrentDirectory);
+            //return CommandResult.Ok(fileSystemService.CurrentDirectory);
         }
 
         string path = string.Join(" ", context.Arguments).Trim('"');
@@ -29,18 +30,18 @@ public class CdCommand : AbstractCommand
 
             if (!fileSystemService.DirectoryExists(target))
             {
-                return CommandResult.Fail(PathNotFoundMessage);
+                //return CommandResult.Fail(PathNotFoundMessage);
             }
 
             fileSystemService.ChangeDirectory(target);
-            return CommandResult.Ok();
+            //return CommandResult.Ok();
         }
         catch (Exception ex) when (ex is IOException
                                    or UnauthorizedAccessException
                                    or ArgumentException
                                    or NotSupportedException)
         {
-            return CommandResult.Fail(PathNotFoundMessage);
+            //return CommandResult.Fail(PathNotFoundMessage);
         }
     }
 }

@@ -23,20 +23,8 @@ public class CommandShell
                 break;
             }
 
-            running = ProcessInput(input);
+            commandInvoker.ExecuteCommand(input);
         }
-    }
-
-    public bool ProcessInput(string input)
-    {
-        var result = commandInvoker.ExecuteCommand(input);
-
-        if (result.OutputMessage != "")
-        {
-            Console.WriteLine(result.OutputMessage);
-        }
-
-        return !result.ShouldExit;
     }
 
     private string GetPrompt()
