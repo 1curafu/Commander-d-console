@@ -1,12 +1,15 @@
+using CommanderD.Services;
+
 namespace CommanderD.Shell;
 
 public class CommandShell
 {
-    private readonly CommandInvoker commandInvoker;
+    private readonly CommandInvoker _commandInvoker;
+    private readonly IFileSystemService _fileSystemService = new FileSystemService();
 
     public CommandShell(CommandInvoker commandInvoker)
     {
-        this.commandInvoker = commandInvoker;
+        this._commandInvoker = commandInvoker;
     }
 
     public void Run()
@@ -23,12 +26,12 @@ public class CommandShell
                 break;
             }
 
-            commandInvoker.ExecuteCommand(input);
+            _commandInvoker.ExecuteCommand(input);
         }
     }
 
     private string GetPrompt()
     {
-        return ">";
+        return $"{_fileSystemService.CurrentDirectory}>";
     }
 }

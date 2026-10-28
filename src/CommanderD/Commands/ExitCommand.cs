@@ -5,8 +5,8 @@ namespace CommanderD.Commands;
 public class ExitCommand : AbstractCommand
 {
 
-    public ExitCommand()
-        :base("exit", "exits the shell")
+    public ExitCommand(IOutputWriter? outputWriter)
+        :base("exit", "exits the shell",  outputWriter)
     {
         
     }

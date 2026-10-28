@@ -1,27 +1,28 @@
 using CommanderD.Services;
+using CommanderD.Shell;
 
 namespace CommanderD.Commands;
 
 public class CommandFactory
 {
-    private readonly Dictionary<string, Func<AbstractCommand>> commands =
+    private readonly Dictionary<string, Func<IOutputWriter, AbstractCommand>> commands =
         new(StringComparer.OrdinalIgnoreCase)
         {
-            { "exit", () => new ExitCommand() },
-            { "cd", () => new CdCommand(new FileSystemService()) },
-            { "Ver", () => new VerCommand() },
+            { "exit", (IOutputWriter outputWriter) => new ExitCommand(outputWriter) },
+            { "cd", (IOutputWriter outputWriter) => new CdCommand(new FileSystemService(), outputWriter) },
+            { "Ver", (IOutputWriter outputWriter) => new VerCommand(outputWriter) },
         };
 
-    public AbstractCommand? Create(string name)
+    public AbstractCommand? Create(string name, IOutputWriter outputWriter)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
             return null;
         }
 
-        if (commands.TryGetValue(name, out Func<AbstractCommand>? create))
+        if (commands.TryGetValue(name, out Func<IOutputWriter,AbstractCommand>? create))
         {
-            return create();
+            return create(outputWriter);
         }
 
         return null;
@@ -32,7 +33,7 @@ public class CommandFactory
         return new List<string>(commands.Keys);
     }
 
-    public void Register(string name, Func<AbstractCommand> create)
+    public void Register(string name, Func<IOutputWriter,AbstractCommand> create)
     {
         commands[name] = create;
     }

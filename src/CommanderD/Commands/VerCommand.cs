@@ -5,8 +5,8 @@ namespace CommanderD.Commands;
 public class VerCommand : AbstractCommand
 {
 
-    public VerCommand()
-        :base("ver", "outputs the current OS version")
+    public VerCommand(IOutputWriter? outputWriter)
+        :base("ver", "outputs the current OS version", outputWriter)
     {
         
     }

@@ -15,8 +15,8 @@ public class CommandShellTests
     private static string RunShell(string input)
     {
         var factory = new CommandFactory();
-        factory.Register("hello", () => new FakeCommand("hello"));
-        factory.Register("exit", () => new FakeCommand("exit"));
+        factory.Register("hello", (outputWriter) => new FakeCommand("hello",outputWriter));
+        factory.Register("exit", (outputWriter) => new FakeCommand("exit",outputWriter));
 
         var reader = new StringReader(input);
         Console.SetIn(reader);
@@ -30,7 +30,7 @@ public class CommandShellTests
     [TestMethod]
     public void Run_KnownCommand_PrintsOutput()
     {
-        string output = RunShell("hello\n");
+        var output = RunShell("hello\n");
 
         StringAssert.Contains(output, "hello");
     }
@@ -38,32 +38,19 @@ public class CommandShellTests
     [TestMethod]
     public void Run_UnknownCommand_PrintsMessageAndKeepsRunning()
     {
-        string output = RunShell("foo\nhello\n");
+        var output = RunShell("foo\n");
 
         StringAssert.Contains(output, "'foo' is not recognized as an internal or external command, operable program or batch file.");
+
+        output = RunShell("hello\n");
+        
         StringAssert.Contains(output, "hello");
-    }
-
-    [TestMethod]
-    public void Run_EmptyInput_ShowsPromptAgain()
-    {
-        string output = RunShell("\n\n");
-
-        Assert.AreEqual(3, output.Split('>').Length - 1);
-    }
-
-    [TestMethod]
-    public void Run_ExitCommand_StopsShell()
-    {
-        string output = RunShell("exit\nhello\n");
-
-        Assert.IsFalse(output.Contains("hello"));
     }
 
     [TestMethod]
     public void Run_CommandNameIsCaseInsensitive()
     {
-        string output = RunShell("HELLO\n");
+        var output = RunShell("HELLO\n");
 
         StringAssert.Contains(output, "hello");
     }

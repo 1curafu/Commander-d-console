@@ -6,13 +6,13 @@ public class CommandInvoker
 {
     private readonly CommandParser _parser;
     private readonly CommandFactory _factory;
-    public readonly IOutputWriter outputWriter;
+    public readonly IOutputWriter OutputWriter;
 
     public CommandInvoker(CommandParser parser, CommandFactory factory, IOutputWriter outputWriter)
     {
         this._parser = parser;
         this._factory = factory;
-        this.outputWriter = outputWriter;
+        this.OutputWriter = outputWriter;
     }
 
     public AbstractCommand? ExecuteCommand(string input)
@@ -24,11 +24,11 @@ public class CommandInvoker
             return null;
         }
 
-        AbstractCommand? command = _factory.Create(context.Name);
+        AbstractCommand? command = _factory.Create(context.Name, OutputWriter);
 
         if (command == null)
         {
-            outputWriter.WriteLn($"'{context.Name}'is not recognized as an internal or external command, operable program or batch file.");
+            OutputWriter.WriteLn($"'{context.Name}' is not recognized as an internal or external command, operable program or batch file.");
             return null;
         }
 
