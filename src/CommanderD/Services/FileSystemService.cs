@@ -23,4 +23,9 @@ public class FileSystemService : IFileSystemService
     {
         Directory.SetCurrentDirectory(path);
     }
+
+    public void CreateDirectory(string path)
+    {
+        Directory.CreateDirectory(path);
+    }
 }
