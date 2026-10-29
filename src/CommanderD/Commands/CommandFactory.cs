@@ -14,6 +14,7 @@ public class CommandFactory
             { "mkdir", (IOutputWriter outputWriter) => new MkDirCommand(new FileSystemService(), outputWriter) },
             { "md", (IOutputWriter outputWriter) => new MkDirCommand(new FileSystemService(), outputWriter) },
             { "dir", (IOutputWriter outputWriter) => new DirCommand(outputWriter) },
+			{ "color", (IOutputWriter outputWriter) => new SetColorCommand(new ConsoleService(), outputWriter) },
         };
 
     public AbstractCommand? Create(string name, IOutputWriter outputWriter)
