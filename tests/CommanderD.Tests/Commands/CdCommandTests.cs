@@ -62,6 +62,7 @@ public class CdCommandTests
         Run();
 
         Assert.AreEqual(directoryBefore, _fileSystem.CurrentDirectory);
+        Assert.AreEqual(0, _fileSystem.ChangeDirectoryCalls);
     }
 
     [TestMethod]

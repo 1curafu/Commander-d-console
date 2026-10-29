@@ -1,6 +1,6 @@
 namespace CommanderD.Shell;
 
-public class ConsoleOuputWriter : IOutputWriter
+public class ConsoleOutputWriter : IOutputWriter
 {
     public string output { get; set; }
     public void Write(string output)

@@ -1,3 +1,4 @@
+using CommanderD.Commands;
 using CommanderD.Services;
 
 namespace CommanderD.Shell;
@@ -5,11 +6,17 @@ namespace CommanderD.Shell;
 public class CommandShell
 {
     private readonly CommandInvoker _commandInvoker;
-    private readonly IFileSystemService _fileSystemService = new FileSystemService();
+    private readonly IFileSystemService _fileSystemService;
 
     public CommandShell(CommandInvoker commandInvoker)
+        : this(commandInvoker, new FileSystemService())
+    {
+    }
+
+    public CommandShell(CommandInvoker commandInvoker, IFileSystemService fileSystemService)
     {
         this._commandInvoker = commandInvoker;
+        this._fileSystemService = fileSystemService;
     }
 
     public void Run()
@@ -26,7 +33,12 @@ public class CommandShell
                 break;
             }
 
-            _commandInvoker.ExecuteCommand(input);
+            AbstractCommand? command = _commandInvoker.ExecuteCommand(input);
+
+            if (command is ExitCommand { ShouldExit: true })
+            {
+                running = false;
+            }
         }
     }
 
