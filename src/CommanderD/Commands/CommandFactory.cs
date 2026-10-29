@@ -11,6 +11,8 @@ public class CommandFactory
             { "exit", (IOutputWriter outputWriter) => new ExitCommand(outputWriter) },
             { "cd", (IOutputWriter outputWriter) => new CdCommand(new FileSystemService(), outputWriter) },
             { "ver", (IOutputWriter outputWriter) => new VerCommand(outputWriter) },
+            { "mkdir", (IOutputWriter outputWriter) => new MkDirCommand(new FileSystemService(), outputWriter) },
+            { "md", (IOutputWriter outputWriter) => new MkDirCommand(new FileSystemService(), outputWriter) },
         };
 
     public AbstractCommand? Create(string name, IOutputWriter outputWriter)

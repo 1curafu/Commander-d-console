@@ -1,76 +1,60 @@
 using CommanderD.Services;
+using CommanderD.Shell;
 
 namespace CommanderD.Commands;
 
 public class MkDirCommand : AbstractCommand
 {
-    private const string SyntaxMessage = "The syntax of the command is incorrect.";
-    private const string PathNotFoundMessage = "The system cannot find the path specified.";
+    private const string SyntaxErrorMessage = "The syntax of the command is incorrect.";
     private const string AccessDeniedMessage = "Access is denied.";
 
-    private readonly IFileSystemService fileSystemService;
+    private readonly IFileSystemService _fileSystemService;
+    private readonly IOutputWriter _outputWriter;
 
-    public MkDirCommand(IFileSystemService fileSystemService)
-        : base("mkdir", "Creates a directory.")
+    public MkDirCommand(IFileSystemService fileSystemService, IOutputWriter outputWriter)
+        : base("mkdir", "Creates a directory.", outputWriter)
     {
-        this.fileSystemService = fileSystemService;
+        _fileSystemService = fileSystemService;
+        _outputWriter = outputWriter;
     }
 
-    public override CommandResult Execute(CommandContext context)
+    public override void Execute(CommandContext context)
     {
         if (context.Arguments.Length == 0)
         {
-            return CommandResult.Fail(SyntaxMessage);
+            _outputWriter.WriteLn(SyntaxErrorMessage);
+            return;
         }
 
-        List<string> errors = new List<string>();
+        string name = string.Join(" ", context.Arguments).Trim('"');
 
-        foreach (string argument in context.Arguments)
-        {
-            string? error = CreateDirectory(argument.Trim('"'));
-
-            if (error != null)
-            {
-                errors.Add(error);
-            }
-        }
-
-        if (errors.Count == 0)
-        {
-            return CommandResult.Ok();
-        }
-
-        return CommandResult.Fail(string.Join(Environment.NewLine, errors));
-    }
-
-    private string? CreateDirectory(string name)
-    {
         if (name.Length == 0)
         {
-            return SyntaxMessage;
+            _outputWriter.WriteLn(SyntaxErrorMessage);
+            return;
         }
 
         try
         {
-            string target = fileSystemService.ResolvePath(name);
+            string target = _fileSystemService.ResolvePath(name);
 
-            if (fileSystemService.DirectoryExists(target))
+            if (_fileSystemService.DirectoryExists(target) || _fileSystemService.FileExists(target))
             {
-                return $"A subdirectory or file {name} already exists.";
+                _outputWriter.WriteLn($"A subdirectory or file {name} already exists.");
+                return;
             }
 
-            fileSystemService.CreateDirectory(target);
-            return null;
+            _fileSystemService.CreateDirectory(target);
         }
         catch (UnauthorizedAccessException)
         {
-            return AccessDeniedMessage;
+            _outputWriter.WriteLn(AccessDeniedMessage);
         }
         catch (Exception ex) when (ex is IOException
-                                   or ArgumentException
-                                   or NotSupportedException)
+                                       or ArgumentException
+                                       or NotSupportedException)
         {
-            return PathNotFoundMessage;
+            _outputWriter.WriteLn(SyntaxErrorMessage);
         }
     }
 }

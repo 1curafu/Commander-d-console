@@ -9,187 +9,191 @@ namespace CommanderD.Tests.Commands;
 public class MkDirCommandTests
 {
     private const string SyntaxMessage = "The syntax of the command is incorrect.";
-    private const string PathNotFoundMessage = "The system cannot find the path specified.";
     private const string AccessDeniedMessage = "Access is denied.";
 
-    private readonly string work = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "commanderd-mkdir-tests", "work"));
-    private readonly FakeFileSystemService fileSystem;
-    private readonly MkDirCommand command;
+    private readonly string _work = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "commanderd-mkdir-tests", "work"));
+    private readonly FakeFileSystemService _fileSystem;
+    private readonly TestOutputWriter _outputWriter;
+    private readonly MkDirCommand _command;
 
     public MkDirCommandTests()
     {
-        fileSystem = new FakeFileSystemService(work);
-        command = new MkDirCommand(fileSystem);
+        _fileSystem = new FakeFileSystemService(_work);
+        _outputWriter = new TestOutputWriter();
+        _command = new MkDirCommand(_fileSystem, _outputWriter);
     }
 
-    private CommandResult Run(params string[] arguments)
+    private void Run(params string[] arguments)
     {
-        return command.Execute(new CommandContext("mkdir", arguments));
+        _command.Execute(new CommandContext("mkdir", arguments));
     }
 
     [TestMethod]
     public void MkDir_HasNameAndDescription()
     {
-        Assert.AreEqual("mkdir", command.Name);
-        Assert.IsFalse(string.IsNullOrWhiteSpace(command.Description));
+        Assert.AreEqual("mkdir", _command.Name);
+        Assert.IsFalse(string.IsNullOrWhiteSpace(_command.Description));
     }
 
+    // ---- Criterion 1: directory does not exist -> created, nothing printed ----
 
     [TestMethod]
     public void MkDir_NewDirectory_CreatesDirectory()
     {
-        string expected = Path.Combine(work, "NewFolder");
+        Run("NewFolder");
 
-        var result = Run("NewFolder");
-
-        Assert.IsTrue(result.Success);
-        Assert.IsTrue(fileSystem.DirectoryExists(expected));
-        Assert.AreEqual(1, fileSystem.CreateDirectoryCalls);
+        Assert.IsTrue(_fileSystem.DirectoryExists(Path.Combine(_work, "NewFolder")));
+        Assert.AreEqual(1, _fileSystem.CreateDirectoryCalls);
     }
 
     [TestMethod]
     public void MkDir_NewDirectory_PrintsNothing()
     {
-        var result = Run("NewFolder");
+        Run("NewFolder");
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual("", result.OutputMessage);
-        Assert.IsFalse(result.ShouldExit);
+        Assert.IsNull(_outputWriter.output);
     }
 
     [TestMethod]
     public void MkDir_NewDirectoryWithAbsolutePath_CreatesItThere()
     {
-        string absolute = Path.Combine(work, "other", "Absolute");
+        string absolute = Path.Combine(_work, "other", "Absolute");
 
-        var result = Run(absolute);
+        Run(absolute);
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual("", result.OutputMessage);
-        Assert.IsTrue(fileSystem.DirectoryExists(absolute));
+        Assert.IsNull(_outputWriter.output);
+        Assert.IsTrue(_fileSystem.DirectoryExists(absolute));
     }
 
     [TestMethod]
     public void MkDir_NameInQuotes_CreatesDirectoryWithoutQuotes()
     {
-        var result = Run("\"My Folder\"");
+        Run("\"My Folder\"");
 
-        Assert.IsTrue(result.Success);
-        Assert.IsTrue(fileSystem.DirectoryExists(Path.Combine(work, "My Folder")));
+        Assert.IsNull(_outputWriter.output);
+        Assert.IsTrue(_fileSystem.DirectoryExists(Path.Combine(_work, "My Folder")));
+    }
+
+    [TestMethod]
+    public void MkDir_QuotedNameSplitByParser_JoinsArguments()
+    {
+        Run("\"My", "Folder\"");
+
+        Assert.IsNull(_outputWriter.output);
+        Assert.IsTrue(_fileSystem.DirectoryExists(Path.Combine(_work, "My Folder")));
+    }
+
+    // ---- Criterion 2: directory already exists -> message ----
+
+    [TestMethod]
+    public void MkDir_ExistingDirectory_ShowsAlreadyExistsMessage()
+    {
+        _fileSystem.AddDirectory(Path.Combine(_work, "ExistingFolder"));
+
+        Run("ExistingFolder");
+
+        Assert.AreEqual("A subdirectory or file ExistingFolder already exists.", _outputWriter.output);
+    }
+
+    [TestMethod]
+    public void MkDir_ExistingDirectory_DoesNotCreateAgain()
+    {
+        _fileSystem.AddDirectory(Path.Combine(_work, "ExistingFolder"));
+
+        Run("ExistingFolder");
+
+        Assert.AreEqual(0, _fileSystem.CreateDirectoryCalls);
+    }
+
+    [TestMethod]
+    public void MkDir_ExistingDirectory_MessageContainsNameAsTyped()
+    {
+        string absolute = Path.Combine(_work, "Existing");
+        _fileSystem.AddDirectory(absolute);
+
+        Run(absolute);
+
+        Assert.AreEqual($"A subdirectory or file {absolute} already exists.", _outputWriter.output);
     }
 
     [TestMethod]
     public void MkDir_SecondCallWithSameName_ShowsAlreadyExists()
     {
         Run("Twice");
+        Assert.IsNull(_outputWriter.output);
 
-        var result = Run("Twice");
+        Run("Twice");
 
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual("A subdirectory or file Twice already exists.", result.OutputMessage);
+        Assert.AreEqual("A subdirectory or file Twice already exists.", _outputWriter.output);
+        Assert.AreEqual(1, _fileSystem.CreateDirectoryCalls);
     }
 
-
-    [TestMethod]
-    public void MkDir_ExistingDirectory_ShowsAlreadyExistsMessage()
-    {
-        fileSystem.AddDirectory(Path.Combine(work, "ExistingFolder"));
-
-        var result = Run("ExistingFolder");
-
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual("A subdirectory or file ExistingFolder already exists.", result.OutputMessage);
-    }
-
-    [TestMethod]
-    public void MkDir_ExistingDirectory_DoesNotCreateAgain()
-    {
-        fileSystem.AddDirectory(Path.Combine(work, "ExistingFolder"));
-
-        Run("ExistingFolder");
-
-        Assert.AreEqual(0, fileSystem.CreateDirectoryCalls);
-    }
-
-    [TestMethod]
-    public void MkDir_ExistingDirectory_MessageContainsNameAsTyped()
-    {
-        string absolute = Path.Combine(work, "Existing");
-        fileSystem.AddDirectory(absolute);
-
-        var result = Run(absolute);
-
-        Assert.AreEqual($"A subdirectory or file {absolute} already exists.", result.OutputMessage);
-    }
-
-
-    [TestMethod]
-    public void MkDir_SeveralNames_CreatesAllOfThem()
-    {
-        var result = Run("one", "two");
-
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual("", result.OutputMessage);
-        Assert.IsTrue(fileSystem.DirectoryExists(Path.Combine(work, "one")));
-        Assert.IsTrue(fileSystem.DirectoryExists(Path.Combine(work, "two")));
-    }
-
-    [TestMethod]
-    public void MkDir_SeveralNamesOneExists_CreatesOthersAndReportsExisting()
-    {
-        fileSystem.AddDirectory(Path.Combine(work, "one"));
-
-        var result = Run("one", "two");
-
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual("A subdirectory or file one already exists.", result.OutputMessage);
-        Assert.IsTrue(fileSystem.DirectoryExists(Path.Combine(work, "two")));
-    }
-
+    // ---- Errors ----
 
     [TestMethod]
     public void MkDir_NoArgument_ShowsSyntaxMessage()
     {
-        var result = Run();
+        Run();
 
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual(SyntaxMessage, result.OutputMessage);
-        Assert.AreEqual(0, fileSystem.CreateDirectoryCalls);
+        Assert.AreEqual(SyntaxMessage, _outputWriter.output);
+        Assert.AreEqual(0, _fileSystem.CreateDirectoryCalls);
     }
 
     [TestMethod]
-    public void MkDir_IoError_ShowsPathNotFound()
+    public void MkDir_OnlyQuotes_ShowsSyntaxMessage()
     {
-        fileSystem.CreateDirectoryException = new IOException("disk error");
+        Run("\"\"");
 
-        var result = Run("NewFolder");
-
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual(PathNotFoundMessage, result.OutputMessage);
+        Assert.AreEqual(SyntaxMessage, _outputWriter.output);
+        Assert.AreEqual(0, _fileSystem.CreateDirectoryCalls);
     }
 
     [TestMethod]
-    public void MkDir_InvalidPath_ShowsPathNotFound()
+    public void MkDir_InvalidPath_ShowsSyntaxMessage()
     {
-        fileSystem.ResolvePathException = new ArgumentException("invalid");
+        _fileSystem.ResolvePathException = new ArgumentException("invalid");
 
-        var result = Run("bad|name");
+        Run("bad|name");
 
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual(PathNotFoundMessage, result.OutputMessage);
+        Assert.AreEqual(SyntaxMessage, _outputWriter.output);
+    }
+
+    [TestMethod]
+    public void MkDir_IoError_ShowsSyntaxMessage()
+    {
+        _fileSystem.CreateDirectoryException = new IOException("disk error");
+
+        Run("NewFolder");
+
+        Assert.AreEqual(SyntaxMessage, _outputWriter.output);
     }
 
     [TestMethod]
     public void MkDir_NoPermission_ShowsAccessDenied()
     {
-        fileSystem.CreateDirectoryException = new UnauthorizedAccessException();
+        _fileSystem.CreateDirectoryException = new UnauthorizedAccessException();
 
-        var result = Run("NewFolder");
+        Run("NewFolder");
 
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual(AccessDeniedMessage, result.OutputMessage);
+        Assert.AreEqual(AccessDeniedMessage, _outputWriter.output);
     }
 
+    [TestMethod]
+    public void MkDir_UnexpectedException_IsNotSwallowed()
+    {
+        _fileSystem.CreateDirectoryException = new InvalidOperationException();
+
+        Assert.ThrowsExactly<InvalidOperationException>(() => Run("NewFolder"));
+    }
+
+    // ---- Through parser, factory and invoker (like typing it into the shell) ----
+
+    private CommandInvoker CreateInvoker(TestOutputWriter writer)
+    {
+        var factory = new CommandFactory();
+        factory.Register("mkdir", (outputWriter) => new MkDirCommand(_fileSystem, outputWriter));
+        return new CommandInvoker(new CommandParser(), factory, writer);
+    }
 
     [TestMethod]
     [DataRow("mkdir Typed")]
@@ -197,31 +201,32 @@ public class MkDirCommandTests
     [DataRow("MkDir Typed")]
     public void MkDir_TypedIntoShell_CreatesDirectoryAndPrintsNothing(string input)
     {
-        var invoker = CreateInvoker();
+        var writer = new TestOutputWriter();
 
-        var result = invoker.ExecuteCommand(input);
+        CreateInvoker(writer).ExecuteCommand(input);
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual("", result.OutputMessage);
-        Assert.IsTrue(fileSystem.DirectoryExists(Path.Combine(work, "Typed")));
+        Assert.IsNull(writer.output);
+        Assert.IsTrue(_fileSystem.DirectoryExists(Path.Combine(_work, "Typed")));
     }
 
     [TestMethod]
     public void MkDir_TypedIntoShellTwice_ShowsAlreadyExists()
     {
-        var invoker = CreateInvoker();
+        var writer = new TestOutputWriter();
+        var invoker = CreateInvoker(writer);
         invoker.ExecuteCommand("MKDIR Typed");
 
-        var result = invoker.ExecuteCommand("MKDIR Typed");
+        invoker.ExecuteCommand("MKDIR Typed");
 
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual("A subdirectory or file Typed already exists.", result.OutputMessage);
+        Assert.AreEqual("A subdirectory or file Typed already exists.", writer.output);
     }
 
-    private CommandInvoker CreateInvoker()
+    [TestMethod]
+    public void MkDir_RegisteredInDefaultFactory_AsMkdirAndMd()
     {
         var factory = new CommandFactory();
-        factory.Register("mkdir", () => new MkDirCommand(fileSystem));
-        return new CommandInvoker(new CommandParser(), factory);
+
+        Assert.IsInstanceOfType(factory.Create("MKDIR", new TestOutputWriter()), typeof(MkDirCommand));
+        Assert.IsInstanceOfType(factory.Create("md", new TestOutputWriter()), typeof(MkDirCommand));
     }
 }
