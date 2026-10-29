@@ -10,7 +10,7 @@ public class CommandFactory
         {
             { "exit", (IOutputWriter outputWriter) => new ExitCommand(outputWriter) },
             { "cd", (IOutputWriter outputWriter) => new CdCommand(new FileSystemService(), outputWriter) },
-            { "Ver", (IOutputWriter outputWriter) => new VerCommand(outputWriter) },
+            { "ver", (IOutputWriter outputWriter) => new VerCommand(outputWriter) },
         };
 
     public AbstractCommand? Create(string name, IOutputWriter outputWriter)

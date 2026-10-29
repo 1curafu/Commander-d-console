@@ -11,9 +11,9 @@ namespace CommanderD.Tests.Shell;
 public class CommandShellTests
 {
 
-    private static readonly IOutputWriter Writer = new TestOutputWriter();
     private static string RunShell(string input)
     {
+        var writer = new TestOutputWriter();
         var factory = new CommandFactory();
         factory.Register("hello", (outputWriter) => new FakeCommand("hello",outputWriter));
         factory.Register("exit", (outputWriter) => new FakeCommand("exit",outputWriter));
@@ -21,10 +21,10 @@ public class CommandShellTests
         var reader = new StringReader(input);
         Console.SetIn(reader);
 
-        var shell = new CommandShell(new CommandInvoker(new CommandParser(), factory, Writer));
+        var shell = new CommandShell(new CommandInvoker(new CommandParser(), factory, writer));
         shell.Run();
 
-        return Writer.output;
+        return writer.output;
     }
 
     [TestMethod]

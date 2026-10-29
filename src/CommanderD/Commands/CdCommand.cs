@@ -22,6 +22,7 @@ public class CdCommand : AbstractCommand
         if (context.Arguments.Length == 0)
         {
             _outputWriter.WriteLn(_fileSystemService.CurrentDirectory);
+            return;
         }
 
         string path = string.Join(" ", context.Arguments).Trim('"');
