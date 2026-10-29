@@ -1,17 +1,19 @@
+using CommanderD.Shell;
+
 namespace CommanderD.Commands;
 
 public class VerCommand : AbstractCommand
 {
 
-    public VerCommand()
-        :base("ver", "outputs the current OS version")
+    public VerCommand(IOutputWriter? outputWriter)
+        :base("ver", "outputs the current OS version", outputWriter)
     {
         
     }
-    public override CommandResult Execute(CommandContext context)
+    public override void Execute(CommandContext context)
     {
         var version = Environment.OSVersion;
         var versionString = version.ToString();
-        return CommandResult.Ok(versionString);
+        OutputWriter.WriteLn(versionString);
     }
 }

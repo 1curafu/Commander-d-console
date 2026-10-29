@@ -1,22 +1,22 @@
 using CommanderD.Commands;
+using CommanderD.Shell;
 
 namespace CommanderD.Tests.Fakes;
 
 public class FakeCommand : AbstractCommand
 {
-    private readonly CommandResult result;
 
     public CommandContext? LastContext { get; private set; }
 
-    public FakeCommand(string name = "fake", CommandResult? result = null)
-        : base(name, "fake command")
+    public FakeCommand(string name, IOutputWriter outputWriter)
+        : base(name, "fake command", outputWriter)
     {
-        this.result = result ?? CommandResult.Ok("fake output");
+        
     }
 
-    public override CommandResult Execute(CommandContext context)
+    public override void Execute(CommandContext context)
     {
+        OutputWriter.Write(Name);
         LastContext = context;
-        return result;
     }
 }

@@ -42,6 +42,11 @@ public class FakeFileSystemService : IFileSystemService
         return directories.Contains(path);
     }
 
+    public bool FileExists(string path)
+    {
+        return File.Exists(path);
+    }
+
     public void ChangeDirectory(string path)
     {
         ChangeDirectoryCalls++;

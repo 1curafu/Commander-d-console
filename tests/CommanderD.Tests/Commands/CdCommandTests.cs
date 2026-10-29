@@ -10,174 +10,167 @@ public class CdCommandTests
 {
     private const string PathNotFoundMessage = "The system cannot find the path specified.";
 
-    private readonly string root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "commanderd-cd-tests"));
-    private readonly string work;
-    private readonly string src;
-    private readonly string spaced;
-    private readonly FakeFileSystemService fileSystem;
-    private readonly CdCommand command;
+    private readonly string _root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "commanderd-cd-tests"));
+    private readonly string _work;
+    private readonly string _src;
+    private readonly string _spaced;
+    private readonly FakeFileSystemService _fileSystem;
+    private readonly CdCommand _command;
+    private readonly IOutputWriter _outputWriter;
 
     public CdCommandTests()
     {
-        work = Path.Combine(root, "work");
-        src = Path.Combine(work, "src");
-        spaced = Path.Combine(work, "My Folder");
+        _work = Path.Combine(_root, "work");
+        _src = Path.Combine(_work, "src");
+        _spaced = Path.Combine(_work, "My Folder");
 
-        fileSystem = new FakeFileSystemService(work);
-        fileSystem.AddDirectory(root);
-        fileSystem.AddDirectory(src);
-        fileSystem.AddDirectory(spaced);
+        _fileSystem = new FakeFileSystemService(_work);
+        _fileSystem.AddDirectory(_root);
+        _fileSystem.AddDirectory(_src);
+        _fileSystem.AddDirectory(_spaced);
 
-        command = new CdCommand(fileSystem);
+        _outputWriter = new TestOutputWriter();
+
+        _command = new CdCommand(_fileSystem, _outputWriter);
     }
 
-    private CommandResult Run(params string[] arguments)
+    private void Run(params string[] arguments)
     {
-        return command.Execute(new CommandContext("cd", arguments));
+        _command.Execute(new CommandContext("cd", arguments));
     }
 
     [TestMethod]
     public void Cd_HasNameAndDescription()
     {
-        Assert.AreEqual("cd", command.Name);
-        Assert.IsFalse(string.IsNullOrWhiteSpace(command.Description));
+        Assert.AreEqual("cd", _command.Name);
+        Assert.IsFalse(string.IsNullOrWhiteSpace(_command.Description));
     }
 
     [TestMethod]
     public void Cd_NoArgument_ShowsCurrentDirectory()
     {
-        var result = Run();
+        Run();
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual(work, result.OutputMessage);
-        Assert.IsFalse(result.ShouldExit);
+        Assert.AreEqual(_work, _command.OutputWriter.output);
     }
 
     [TestMethod]
     public void Cd_NoArgument_DoesNotChangeDirectory()
     {
+        var directoryBefore = _fileSystem.CurrentDirectory;
+        
         Run();
 
-        Assert.AreEqual(0, fileSystem.ChangeDirectoryCalls);
-        Assert.AreEqual(work, fileSystem.CurrentDirectory);
+        Assert.AreEqual(directoryBefore, _fileSystem.CurrentDirectory);
     }
 
     [TestMethod]
     public void Cd_RelativeDirectory_ChangesDirectory()
     {
-        var result = Run("src");
+        Run("src");
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual("", result.OutputMessage);
-        Assert.AreEqual(src, fileSystem.ChangedTo);
-        Assert.AreEqual(src, fileSystem.CurrentDirectory);
+        Assert.IsNull(_command.OutputWriter.output);
+        Assert.AreEqual(_src, _fileSystem.ChangedTo);
+        Assert.AreEqual(_src, _fileSystem.CurrentDirectory);
     }
 
     [TestMethod]
     public void Cd_AbsoluteDirectory_ChangesDirectory()
     {
-        var result = Run(src);
+        Run(_src);
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual("", result.OutputMessage);
-        Assert.AreEqual(src, fileSystem.ChangedTo);
+        Assert.IsNull(_command.OutputWriter.output);
+        Assert.AreEqual(_src, _fileSystem.ChangedTo);
     }
 
     [TestMethod]
     public void Cd_ParentDirectory_ChangesToParent()
     {
-        var result = Run("..");
+        Run("..");
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual(root, fileSystem.ChangedTo);
+        Assert.AreEqual(_root, _fileSystem.ChangedTo);
     }
 
     [TestMethod]
     public void Cd_CurrentDirectoryDot_StaysInDirectory()
     {
-        var result = Run(".");
-
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual(work, fileSystem.CurrentDirectory);
+        Run(".");
+        
+        Assert.AreEqual(_work, _fileSystem.CurrentDirectory);
     }
 
     [TestMethod]
     public void Cd_RelativePathWithParent_ResolvesPath()
     {
-        fileSystem.CurrentDirectory = src;
+        _fileSystem.CurrentDirectory = _src;
 
-        var result = Run(Path.Combine("..", "My Folder"));
+        Run(Path.Combine("..", "My Folder"));
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual(spaced, fileSystem.ChangedTo);
+        Assert.AreEqual(_spaced, _fileSystem.ChangedTo);
     }
 
     [TestMethod]
     public void Cd_QuotedPathWithSpaces_ChangesDirectory()
     {
-        var result = Run("\"My Folder\"");
+        Run("\"My Folder\"");
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual(spaced, fileSystem.ChangedTo);
+        Assert.AreEqual(_spaced, _fileSystem.ChangedTo);
     }
 
     [TestMethod]
     public void Cd_QuotedPathSplitByParser_JoinsArgumentsAndRemovesQuotes()
     {
-        var result = Run("\"My", "Folder\"");
+        Run("\"My", "Folder\"");
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual(spaced, fileSystem.ChangedTo);
+        Assert.AreEqual(_spaced, _fileSystem.ChangedTo);
     }
 
     [TestMethod]
     public void Cd_UnquotedPathWithSpaces_ChangesDirectory()
     {
-        var result = Run("My", "Folder");
+        Run("My", "Folder");
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual(spaced, fileSystem.ChangedTo);
+        Assert.AreEqual(_spaced, _fileSystem.ChangedTo);
     }
 
     [TestMethod]
     public void Cd_DirectoryDoesNotExist_ShowsPathNotFound()
     {
-        var result = Run("missing");
+        Run("missing");
 
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual(PathNotFoundMessage, result.OutputMessage);
-        Assert.IsFalse(result.ShouldExit);
+        Assert.AreEqual(PathNotFoundMessage, _command.OutputWriter.output);
     }
 
     [TestMethod]
     public void Cd_DirectoryDoesNotExist_KeepsCurrentDirectory()
     {
+        var directoryBefore = _fileSystem.CurrentDirectory;
+        
         Run("missing");
 
-        Assert.AreEqual(0, fileSystem.ChangeDirectoryCalls);
-        Assert.AreEqual(work, fileSystem.CurrentDirectory);
+        Assert.AreEqual(directoryBefore, _fileSystem.CurrentDirectory);
     }
 
     [TestMethod]
-    public void Cd_TargetIsFileNotDirectory_ShowsPathNotFound()
+    public void Cd_TargetIsFileNotDirectory_ShowsPathNotFound_AndKeepsCurrentDirectory()
     {
-        var result = Run("notes.txt");
+        var directoryBefore = _fileSystem.CurrentDirectory;
+        
+        Run("notes.txt");
 
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual(PathNotFoundMessage, result.OutputMessage);
-        Assert.AreEqual(0, fileSystem.ChangeDirectoryCalls);
+        Assert.AreEqual(PathNotFoundMessage, _command.OutputWriter.output);
+        Assert.AreEqual(directoryBefore, _fileSystem.CurrentDirectory);
     }
 
     [TestMethod]
     public void Cd_ExecutedTwice_ChangesRelativeToNewDirectory()
     {
-        fileSystem.AddDirectory(Path.Combine(src, "inner"));
+        _fileSystem.AddDirectory(Path.Combine(_src, "inner"));
 
         Run("src");
-        var result = Run("inner");
+        Run("inner");
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual(Path.Combine(src, "inner"), fileSystem.CurrentDirectory);
+        Assert.AreEqual(Path.Combine(_src, "inner"), _fileSystem.CurrentDirectory);
     }
 
     [TestMethod]
@@ -185,81 +178,76 @@ public class CdCommandTests
     {
         Run("src");
 
-        var result = Run();
+        Run();
 
-        Assert.AreEqual(src, result.OutputMessage);
+        Assert.AreEqual(_src, _command.OutputWriter.output);
     }
 
     [TestMethod]
     public void Cd_ResolvePathThrowsArgumentException_ShowsPathNotFound()
     {
-        fileSystem.ResolvePathException = new ArgumentException("invalid path");
+        _fileSystem.ResolvePathException = new ArgumentException("invalid path");
 
-        var result = Run("???");
+        Run("???");
 
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual(PathNotFoundMessage, result.OutputMessage);
-        Assert.AreEqual(0, fileSystem.ChangeDirectoryCalls);
+        Assert.AreEqual(PathNotFoundMessage, _command.OutputWriter.output);
+        Assert.AreEqual(0, _fileSystem.ChangeDirectoryCalls);
     }
 
     [TestMethod]
     public void Cd_ResolvePathThrowsNotSupportedException_ShowsPathNotFound()
     {
-        fileSystem.ResolvePathException = new NotSupportedException();
+        _fileSystem.ResolvePathException = new NotSupportedException();
 
-        var result = Run("a:b:c");
+        Run("a:b:c");
 
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual(PathNotFoundMessage, result.OutputMessage);
+        Assert.AreEqual(PathNotFoundMessage, _command.OutputWriter.output);
     }
 
     [TestMethod]
     public void Cd_ChangeDirectoryThrowsUnauthorized_ShowsPathNotFound()
     {
-        fileSystem.ChangeDirectoryException = new UnauthorizedAccessException();
+        _fileSystem.ChangeDirectoryException = new UnauthorizedAccessException();
 
-        var result = Run("src");
+        Run("src");
 
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual(PathNotFoundMessage, result.OutputMessage);
-        Assert.AreEqual(work, fileSystem.CurrentDirectory);
+        Assert.AreEqual(PathNotFoundMessage, _command.OutputWriter.output);
+        Assert.AreEqual(_work, _fileSystem.CurrentDirectory);
     }
 
     [TestMethod]
     public void Cd_ChangeDirectoryThrowsIOException_ShowsPathNotFound()
     {
-        fileSystem.ChangeDirectoryException = new IOException();
+        _fileSystem.ChangeDirectoryException = new IOException();
 
-        var result = Run("src");
+        Run("src");
 
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual(PathNotFoundMessage, result.OutputMessage);
+        Assert.AreEqual(PathNotFoundMessage, _command.OutputWriter.output);
     }
 
     [TestMethod]
     public void Cd_UnexpectedException_IsNotSwallowed()
     {
-        fileSystem.ChangeDirectoryException = new InvalidOperationException();
+        _fileSystem.ChangeDirectoryException = new InvalidOperationException();
 
         Assert.ThrowsExactly<InvalidOperationException>(() => Run("src"));
     }
 
-    private CommandResult RunLine(string input)
+    private void RunLine(string input)
     {
         CommandContext? context = new CommandParser().Parse(input);
 
         Assert.IsNotNull(context);
         Assert.AreEqual("cd", context.Name.ToLowerInvariant());
-        return command.Execute(context);
+        _command.Execute(context);
     }
 
     [TestMethod]
     public void Cd_WithoutSpaceBeforeDoubleDot_WorksLikeCdDoubleDot()
     {
-        var result = RunLine("CD..");
+        RunLine("CD..");
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual(root, fileSystem.ChangedTo);
+        Assert.AreEqual(_root, _fileSystem.ChangedTo);
     }
 
     [TestMethod]
@@ -277,12 +265,11 @@ public class CdCommandTests
     public void Cd_Root_ChangesToRootOfCurrentDrive()
     {
         string separator = Path.DirectorySeparatorChar.ToString();
-        string driveRoot = Path.GetPathRoot(work)!;
-        fileSystem.AddDirectory(driveRoot);
+        string driveRoot = Path.GetPathRoot(_work)!;
+        _fileSystem.AddDirectory(driveRoot);
 
-        var result = Run(separator);
+        Run(separator);
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual(driveRoot, fileSystem.ChangedTo);
+        Assert.AreEqual(driveRoot, _fileSystem.ChangedTo);
     }
 }
