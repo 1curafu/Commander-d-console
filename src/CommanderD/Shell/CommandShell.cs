@@ -1,12 +1,22 @@
+using CommanderD.Commands;
+using CommanderD.Services;
+
 namespace CommanderD.Shell;
 
 public class CommandShell
 {
-    private readonly CommandInvoker commandInvoker;
+    private readonly CommandInvoker _commandInvoker;
+    private readonly IFileSystemService _fileSystemService;
 
     public CommandShell(CommandInvoker commandInvoker)
+        : this(commandInvoker, new FileSystemService())
     {
-        this.commandInvoker = commandInvoker;
+    }
+
+    public CommandShell(CommandInvoker commandInvoker, IFileSystemService fileSystemService)
+    {
+        this._commandInvoker = commandInvoker;
+        this._fileSystemService = fileSystemService;
     }
 
     public void Run()
@@ -23,24 +33,17 @@ public class CommandShell
                 break;
             }
 
-            running = ProcessInput(input);
+            AbstractCommand? command = _commandInvoker.ExecuteCommand(input);
+
+            if (command is ExitCommand { ShouldExit: true })
+            {
+                running = false;
+            }
         }
-    }
-
-    public bool ProcessInput(string input)
-    {
-        var result = commandInvoker.ExecuteCommand(input);
-
-        if (result.OutputMessage != "")
-        {
-            Console.WriteLine(result.OutputMessage);
-        }
-
-        return !result.ShouldExit;
     }
 
     private string GetPrompt()
     {
-        return ">";
+        return $"{_fileSystemService.CurrentDirectory}>";
     }
 }

@@ -4,32 +4,35 @@ namespace CommanderD.Shell;
 
 public class CommandInvoker
 {
-    private readonly CommandParser parser;
-    private readonly CommandFactory factory;
+    private readonly CommandParser _parser;
+    private readonly CommandFactory _factory;
+    public readonly IOutputWriter OutputWriter;
 
-    public CommandInvoker(CommandParser parser, CommandFactory factory)
+    public CommandInvoker(CommandParser parser, CommandFactory factory, IOutputWriter outputWriter)
     {
-        this.parser = parser;
-        this.factory = factory;
+        this._parser = parser;
+        this._factory = factory;
+        this.OutputWriter = outputWriter;
     }
 
-    public CommandResult ExecuteCommand(string input)
+    public AbstractCommand? ExecuteCommand(string input)
     {
-        CommandContext? context = parser.Parse(input);
+        CommandContext? context = _parser.Parse(input);
 
         if (context == null)
         {
-            return CommandResult.Ok();
+            return null;
         }
 
-        ICommand? command = factory.Create(context.Name);
+        AbstractCommand? command = _factory.Create(context.Name, OutputWriter);
 
         if (command == null)
         {
-            return CommandResult.Fail(
-                $"'{context.Name}' is not recognized as an internal or external command, operable program or batch file.");
+            OutputWriter.WriteLn($"'{context.Name}' is not recognized as an internal or external command, operable program or batch file.");
+            return null;
         }
 
-        return command.Execute(context);
+        command.Execute(context);
+        return command;
     }
 }

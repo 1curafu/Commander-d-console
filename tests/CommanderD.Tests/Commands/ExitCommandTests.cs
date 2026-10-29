@@ -1,18 +1,40 @@
 using CommanderD.Commands;
+using CommanderD.Shell;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace CommanderD.Tests.Commands;
 
 [TestClass]
 public class ExitCommandTests
 {
-    [TestMethod]
-    public void Given_shell_is_running_When_I_enter_exit_Then_the_shell_ends()
-    {
-        var _exitCommand = new ExitCommand();
-        var _commandContext = new CommandContext(null, null);
-    
-        var _commandResult = _exitCommand.Execute(_commandContext);
+    private readonly ExitCommand _command = new(new TestOutputWriter());
 
-        Assert.AreEqual(_commandResult.Success, true);
-        Assert.AreEqual(_commandResult.ShouldExit, true);
+    [TestMethod]
+    public void Exit_HasNameAndDescription()
+    {
+        Assert.AreEqual("exit", _command.Name);
+        Assert.IsFalse(string.IsNullOrWhiteSpace(_command.Description));
+    }
+
+    [TestMethod]
+    public void Exit_BeforeExecute_DoesNotRequestExit()
+    {
+        Assert.IsFalse(_command.ShouldExit);
+    }
+
+    [TestMethod]
+    public void Exit_Execute_RequestsExit()
+    {
+        _command.Execute(new CommandContext("exit", Array.Empty<string>()));
+
+        Assert.IsTrue(_command.ShouldExit);
+    }
+
+    [TestMethod]
+    public void Exit_IsFoundByFactoryCaseInsensitive()
+    {
+        var command = new CommandFactory().Create("EXIT", new TestOutputWriter());
+
+        Assert.IsInstanceOfType<ExitCommand>(command);
     }
 }
