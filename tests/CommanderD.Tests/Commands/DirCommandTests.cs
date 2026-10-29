@@ -144,4 +144,52 @@ public class DirCommandTests
         StringAssert.Contains(_outputWriter.output, $" Verzeichnis von {_testDir}");
         StringAssert.Contains(_outputWriter.output, "test.txt");
     }
+
+    [TestMethod]
+    [DataRow("de-CH", "29.10.2026  14:10")]
+    [DataRow("en-US", "10/29/2026  2:10 PM")]
+    [DataRow("ja-JP", "2026/10/29  14:10")]
+    public void Execute_DifferentRegionalSettings_UsesRegionalDateTimeFormat(string culture, string expected)
+    {
+        // useUserOverride: false, damit eigene Windows-Einstellungen den Test nicht beeinflussen
+        CultureInfo.CurrentCulture = new CultureInfo(culture, false);
+        string file = Path.Combine(_testDir, "test.txt");
+        File.WriteAllText(file, "Hallo");
+        File.SetLastWriteTime(file, new DateTime(2026, 10, 29, 14, 10, 0));
+        Directory.CreateDirectory(Path.Combine(_testDir, "Unterordner"));
+        Directory.SetLastWriteTime(Path.Combine(_testDir, "Unterordner"), new DateTime(2026, 10, 29, 14, 10, 0));
+
+        var command = new DirCommand(_outputWriter);
+        var context = new CommandContext("dir", new[] { _testDir });
+        command.Execute(context);
+
+        StringAssert.Contains(_outputWriter.output, $"{expected}    <DIR>          Unterordner");
+        StringAssert.Contains(_outputWriter.output, $"{expected}    {"5",14} test.txt");
+    }
+
+    [TestMethod]
+    public void Execute_OutputEnds_ShowsFileAndDirectoryCountAndFreeBytes()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "a.txt"), "Hallo");
+        File.WriteAllText(Path.Combine(_testDir, "b.txt"), "Hallo");
+        Directory.CreateDirectory(Path.Combine(_testDir, "Unterordner"));
+        var command = new DirCommand(_outputWriter);
+        var context = new CommandContext("dir", new[] { _testDir });
+        command.Execute(context);
+
+        string[] lines = _outputWriter.output.Split(Environment.NewLine);
+        string fileLine = lines[^2];
+        string dirLine = lines[^1];
+
+        Assert.AreEqual($"{2,16} Datei(en) {10,14:N0} Bytes", fileLine);
+        StringAssert.StartsWith(dirLine, $"{1,16} Verzeichnis(se), ");
+        StringAssert.EndsWith(dirLine, " Bytes frei");
+
+        // Freier Speicher kann sich während dem Test leicht ändern, darum mit Toleranz vergleichen
+        string number = dirLine.Substring($"{1,16} Verzeichnis(se), ".Length).Replace(" Bytes frei", "").Trim();
+        long freeBytes = long.Parse(number, NumberStyles.AllowThousands, CultureInfo.CurrentCulture);
+        long expectedFree = new DriveInfo(Path.GetPathRoot(_testDir)!).AvailableFreeSpace;
+        Assert.IsTrue(Math.Abs(expectedFree - freeBytes) < 100_000_000,
+            $"Erwartet ca. {expectedFree:N0} Bytes frei, war {freeBytes:N0}");
+    }
 }

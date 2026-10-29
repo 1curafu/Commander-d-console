@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using CommanderD.Shell;
 
@@ -46,21 +47,26 @@ public class DirCommand : AbstractCommand
             int dirCount = 0, fileCount = 0;
             long totalSize = 0;
 
+            var fmt = CultureInfo.CurrentCulture.DateTimeFormat;
+            string dateTimePattern = $"{fmt.ShortDatePattern}  {fmt.ShortTimePattern}";
+
             foreach (var d in dirs)
             {
-                output.AppendLine($"{d.LastWriteTime:dd.MM.yyyy  HH:mm}    <DIR>          {d.Name}");
+                output.AppendLine($"{d.LastWriteTime.ToString(dateTimePattern)}    <DIR>          {d.Name}");
                 dirCount++;
             }
 
             foreach (var f in files)
             {
-                output.AppendLine($"{f.LastWriteTime:dd.MM.yyyy  HH:mm}    {f.Length,14:N0} {f.Name}");
+                output.AppendLine($"{f.LastWriteTime.ToString(dateTimePattern)}    {f.Length,14:N0} {f.Name}");
                 fileCount++;
                 totalSize += f.Length;
             }
 
+            long freeBytes = new DriveInfo(dir.Root.FullName).AvailableFreeSpace;
+
             output.AppendLine($"{fileCount,16} Datei(en) {totalSize,14:N0} Bytes");
-            output.Append($"{dirCount,16} Verzeichnis(se)");
+            output.Append($"{dirCount,16} Verzeichnis(se), {freeBytes,14:N0} Bytes frei");
 
             OutputWriter.WriteLn(output.ToString());
         }
