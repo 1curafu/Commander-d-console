@@ -13,6 +13,7 @@ public class CommandFactory
             { "ver", (IOutputWriter outputWriter) => new VerCommand(outputWriter) },
             { "mkdir", (IOutputWriter outputWriter) => new MkDirCommand(new FileSystemService(), outputWriter) },
             { "md", (IOutputWriter outputWriter) => new MkDirCommand(new FileSystemService(), outputWriter) },
+            { "dir", (IOutputWriter outputWriter) => new DirCommand(outputWriter) },
         };
 
     public AbstractCommand? Create(string name, IOutputWriter outputWriter)
