@@ -30,7 +30,14 @@ public class CdCommand : AbstractCommand
         {
             string target = _fileSystemService.ResolvePath(path);
 
-            _fileSystemService.ChangeDirectory(target);
+            if (!_fileSystemService.DirectoryExists(target) && !_fileSystemService.FileExists(target)) 
+            {
+                _outputWriter.WriteLn(PathNotFoundMessage);
+            }
+            else
+            {
+                _fileSystemService.ChangeDirectory(target);
+            }
         }
         catch (Exception ex) when (ex is IOException
                                    or UnauthorizedAccessException
