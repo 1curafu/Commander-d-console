@@ -1,20 +1,29 @@
+using CommanderD.Services;
+using CommanderD.Shell;
+
 namespace CommanderD.Commands;
 
 public class CommandFactory
 {
-    private readonly Dictionary<string, Func<ICommand>> commands =
-        new Dictionary<string, Func<ICommand>>(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Func<IOutputWriter, AbstractCommand>> commands =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "exit", (IOutputWriter outputWriter) => new ExitCommand(outputWriter) },
+            { "cd", (IOutputWriter outputWriter) => new CdCommand(new FileSystemService(), outputWriter) },
+            { "Ver", (IOutputWriter outputWriter) => new VerCommand(outputWriter) },
+            { "dir", (IOutputWriter outputWriter) => new DirCommand(outputWriter) },
+        };
 
-    public ICommand? Create(string name)
+    public AbstractCommand? Create(string name, IOutputWriter outputWriter)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
             return null;
         }
 
-        if (commands.TryGetValue(name, out Func<ICommand>? create))
+        if (commands.TryGetValue(name, out Func<IOutputWriter,AbstractCommand>? create))
         {
-            return create();
+            return create(outputWriter);
         }
 
         return null;
@@ -25,7 +34,7 @@ public class CommandFactory
         return new List<string>(commands.Keys);
     }
 
-    public void Register(string name, Func<ICommand> create)
+    public void Register(string name, Func<IOutputWriter,AbstractCommand> create)
     {
         commands[name] = create;
     }

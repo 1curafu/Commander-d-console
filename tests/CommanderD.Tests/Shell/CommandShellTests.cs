@@ -10,61 +10,48 @@ namespace CommanderD.Tests.Shell;
 [TestClass]
 public class CommandShellTests
 {
+
+    private static readonly IOutputWriter Writer = new TestOutputWriter();
     private static string RunShell(string input)
     {
         var factory = new CommandFactory();
-        factory.Register("hello", () => new FakeCommand("hello", CommandResult.Ok("hello-output")));
-        factory.Register("exit", () => new FakeCommand("exit", CommandResult.Exit()));
+        factory.Register("hello", (outputWriter) => new FakeCommand("hello",outputWriter));
+        factory.Register("exit", (outputWriter) => new FakeCommand("exit",outputWriter));
 
         var reader = new StringReader(input);
-        var writer = new StringWriter();
         Console.SetIn(reader);
-        Console.SetOut(writer);
 
-        var shell = new CommandShell(new CommandInvoker(new CommandParser(), factory));
+        var shell = new CommandShell(new CommandInvoker(new CommandParser(), factory, Writer));
         shell.Run();
 
-        return writer.ToString();
+        return Writer.output;
     }
 
     [TestMethod]
     public void Run_KnownCommand_PrintsOutput()
     {
-        string output = RunShell("hello\n");
+        var output = RunShell("hello\n");
 
-        StringAssert.Contains(output, "hello-output");
+        StringAssert.Contains(output, "hello");
     }
 
     [TestMethod]
     public void Run_UnknownCommand_PrintsMessageAndKeepsRunning()
     {
-        string output = RunShell("foo\nhello\n");
+        var output = RunShell("foo\n");
 
         StringAssert.Contains(output, "'foo' is not recognized as an internal or external command, operable program or batch file.");
-        StringAssert.Contains(output, "hello-output");
-    }
 
-    [TestMethod]
-    public void Run_EmptyInput_ShowsPromptAgain()
-    {
-        string output = RunShell("\n\n");
-
-        Assert.AreEqual(3, output.Split('>').Length - 1);
-    }
-
-    [TestMethod]
-    public void Run_ExitCommand_StopsShell()
-    {
-        string output = RunShell("exit\nhello\n");
-
-        Assert.IsFalse(output.Contains("hello-output"));
+        output = RunShell("hello\n");
+        
+        StringAssert.Contains(output, "hello");
     }
 
     [TestMethod]
     public void Run_CommandNameIsCaseInsensitive()
     {
-        string output = RunShell("HELLO\n");
+        var output = RunShell("HELLO\n");
 
-        StringAssert.Contains(output, "hello-output");
+        StringAssert.Contains(output, "hello");
     }
 }

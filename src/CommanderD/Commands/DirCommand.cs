@@ -1,14 +1,16 @@
 using System.Text;
+using CommanderD.Shell;
 
 namespace CommanderD.Commands;
 
 public class DirCommand : AbstractCommand
 {
-    public DirCommand() : base("dir", "Zeigt die Dateien und Unterverzeichnisse eines Verzeichnisses an.")
+    public DirCommand(IOutputWriter outputWriter)
+        : base("dir", "Zeigt die Dateien und Unterverzeichnisse eines Verzeichnisses an.", outputWriter)
     {
     }
 
-    public override CommandResult Execute(CommandContext context)
+    public override void Execute(CommandContext context)
     {
         
         string param = string.Join(" ", context.Arguments);
@@ -60,23 +62,23 @@ public class DirCommand : AbstractCommand
             output.AppendLine($"{fileCount,16} Datei(en) {totalSize,14:N0} Bytes");
             output.Append($"{dirCount,16} Verzeichnis(se)");
 
-            return CommandResult.Ok(output.ToString());
+            OutputWriter.WriteLn(output.ToString());
         }
         catch (DirectoryNotFoundException)
         {
-            return CommandResult.Fail($"Das System kann den angegebenen Pfad nicht finden: {param}");
+            OutputWriter.WriteLn($"Das System kann den angegebenen Pfad nicht finden: {param}");
         }
         catch (UnauthorizedAccessException)
         {
-            return CommandResult.Fail($"Zugriff verweigert: {param}");
+            OutputWriter.WriteLn($"Zugriff verweigert: {param}");
         }
         catch (ArgumentException)
         {
-            return CommandResult.Fail($"Ungültiger Pfad: {param}");
+            OutputWriter.WriteLn($"Ungültiger Pfad: {param}");
         }
         catch (IOException e)
         {
-            return CommandResult.Fail($"Fehler beim Lesen des Verzeichnisses: {e.Message}");
+            OutputWriter.WriteLn($"Fehler beim Lesen des Verzeichnisses: {e.Message}");
         }
     }
 }
