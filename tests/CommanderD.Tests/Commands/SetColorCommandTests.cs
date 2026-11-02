@@ -93,7 +93,7 @@ public class SetColorCommandTests
         Run("0A");
 
         Assert.AreEqual(1, _console.SetColorsCalls);
-        Assert.IsNull(_outputWriter.output);
+        Assert.AreEqual(string.Empty, _outputWriter.OutputBuffer);
     }
 
 
@@ -108,7 +108,7 @@ public class SetColorCommandTests
         Assert.AreEqual(0, _console.SetColorsCalls);
         Assert.AreEqual(ConsoleColor.Black, _console.BackgroundColor);
         Assert.AreEqual(ConsoleColor.Gray, _console.ForegroundColor);
-        Assert.IsNull(_outputWriter.output);
+        Assert.AreEqual(string.Empty, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
@@ -130,7 +130,7 @@ public class SetColorCommandTests
     {
         Run(code);
 
-        Assert.AreEqual(SyntaxMessage, _outputWriter.output);
+        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
         Assert.AreEqual(0, _console.SetColorsCalls);
     }
 
@@ -139,7 +139,7 @@ public class SetColorCommandTests
     {
         Run("0A", "1F");
 
-        Assert.AreEqual(SyntaxMessage, _outputWriter.output);
+        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
         Assert.AreEqual(0, _console.SetColorsCalls);
     }
 
@@ -148,7 +148,7 @@ public class SetColorCommandTests
     {
         var factory = new CommandFactory();
         factory.Register("color", (outputWriter) => new SetColorCommand(_console, outputWriter));
-        return new CommandInvoker(new CommandParser(), factory, writer);
+        return new CommandInvoker(new Parser(), factory, writer);
     }
 
     [TestMethod]
@@ -161,7 +161,7 @@ public class SetColorCommandTests
 
         CreateInvoker(writer).ExecuteCommand(input);
 
-        Assert.IsNull(writer.output);
+        Assert.AreEqual(string.Empty, writer.OutputBuffer);
         Assert.AreEqual(ConsoleColor.Black, _console.BackgroundColor);
         Assert.AreEqual(ConsoleColor.Green, _console.ForegroundColor);
     }

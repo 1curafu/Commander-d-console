@@ -4,18 +4,23 @@ namespace CommanderD.Shell;
 
 public class CommandInvoker
 {
-    private readonly CommandParser _parser;
+    private readonly Parser _parser;
     private readonly CommandFactory _factory;
     public readonly IOutputWriter OutputWriter;
 
-    public CommandInvoker(CommandParser parser, CommandFactory factory, IOutputWriter outputWriter)
+    public CommandInvoker(IOutputWriter outputWriter)
+        : this(new Parser(), new CommandFactory(), outputWriter)
+    {
+    }
+
+    public CommandInvoker(Parser parser, CommandFactory factory, IOutputWriter outputWriter)
     {
         this._parser = parser;
         this._factory = factory;
         this.OutputWriter = outputWriter;
     }
 
-    public AbstractCommand? ExecuteCommand(string input)
+    public Command? ExecuteCommand(string input)
     {
         CommandContext? context = _parser.Parse(input);
 
@@ -24,7 +29,7 @@ public class CommandInvoker
             return null;
         }
 
-        AbstractCommand? command = _factory.Create(context.Name, OutputWriter);
+        Command? command = _factory.Create(context.Name, OutputWriter);
 
         if (command == null)
         {

@@ -3,7 +3,7 @@ using CommanderD.Shell;
 
 namespace CommanderD.Tests.Fakes;
 
-public class FakeCommand : AbstractCommand
+public class FakeCommand : Command
 {
 
     public CommandContext? LastContext { get; private set; }

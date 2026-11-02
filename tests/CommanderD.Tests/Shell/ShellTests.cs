@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CommanderD.Tests.Shell;
 
 [TestClass]
-public class CommandShellTests
+public class ShellTests
 {
 
     private static string RunShell(string input)
@@ -21,10 +21,10 @@ public class CommandShellTests
         var reader = new StringReader(input);
         Console.SetIn(reader);
 
-        var shell = new CommandShell(new CommandInvoker(new CommandParser(), factory, writer));
+        var shell = new CommanderD.Shell.Shell(new CommandInvoker(new Parser(), factory, writer));
         shell.Run();
 
-        return writer.output;
+        return writer.OutputBuffer;
     }
 
     [TestMethod]

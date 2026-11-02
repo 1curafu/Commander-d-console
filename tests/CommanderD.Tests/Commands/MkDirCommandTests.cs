@@ -51,7 +51,7 @@ public class MkDirCommandTests
     {
         Run("NewFolder");
 
-        Assert.IsNull(_outputWriter.output);
+        Assert.AreEqual(string.Empty, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
@@ -61,7 +61,7 @@ public class MkDirCommandTests
 
         Run(absolute);
 
-        Assert.IsNull(_outputWriter.output);
+        Assert.AreEqual(string.Empty, _outputWriter.OutputBuffer);
         Assert.IsTrue(_fileSystem.DirectoryExists(absolute));
     }
 
@@ -70,7 +70,7 @@ public class MkDirCommandTests
     {
         Run("\"My Folder\"");
 
-        Assert.IsNull(_outputWriter.output);
+        Assert.AreEqual(string.Empty, _outputWriter.OutputBuffer);
         Assert.IsTrue(_fileSystem.DirectoryExists(Path.Combine(_work, "My Folder")));
     }
 
@@ -79,7 +79,7 @@ public class MkDirCommandTests
     {
         Run("\"My", "Folder\"");
 
-        Assert.IsNull(_outputWriter.output);
+        Assert.AreEqual(string.Empty, _outputWriter.OutputBuffer);
         Assert.IsTrue(_fileSystem.DirectoryExists(Path.Combine(_work, "My Folder")));
     }
 
@@ -92,7 +92,7 @@ public class MkDirCommandTests
 
         Run("ExistingFolder");
 
-        Assert.AreEqual("A subdirectory or file ExistingFolder already exists.", _outputWriter.output);
+        Assert.AreEqual("A subdirectory or file ExistingFolder already exists." + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
@@ -113,18 +113,18 @@ public class MkDirCommandTests
 
         Run(absolute);
 
-        Assert.AreEqual($"A subdirectory or file {absolute} already exists.", _outputWriter.output);
+        Assert.AreEqual($"A subdirectory or file {absolute} already exists." + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
     public void MkDir_SecondCallWithSameName_ShowsAlreadyExists()
     {
         Run("Twice");
-        Assert.IsNull(_outputWriter.output);
+        Assert.AreEqual(string.Empty, _outputWriter.OutputBuffer);
 
         Run("Twice");
 
-        Assert.AreEqual("A subdirectory or file Twice already exists.", _outputWriter.output);
+        Assert.AreEqual("A subdirectory or file Twice already exists." + Environment.NewLine, _outputWriter.OutputBuffer);
         Assert.AreEqual(1, _fileSystem.CreateDirectoryCalls);
     }
 
@@ -135,7 +135,7 @@ public class MkDirCommandTests
     {
         Run();
 
-        Assert.AreEqual(SyntaxMessage, _outputWriter.output);
+        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
         Assert.AreEqual(0, _fileSystem.CreateDirectoryCalls);
     }
 
@@ -144,7 +144,7 @@ public class MkDirCommandTests
     {
         Run("\"\"");
 
-        Assert.AreEqual(SyntaxMessage, _outputWriter.output);
+        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
         Assert.AreEqual(0, _fileSystem.CreateDirectoryCalls);
     }
 
@@ -155,7 +155,7 @@ public class MkDirCommandTests
 
         Run("bad|name");
 
-        Assert.AreEqual(SyntaxMessage, _outputWriter.output);
+        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
@@ -165,7 +165,7 @@ public class MkDirCommandTests
 
         Run("NewFolder");
 
-        Assert.AreEqual(SyntaxMessage, _outputWriter.output);
+        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
@@ -175,7 +175,7 @@ public class MkDirCommandTests
 
         Run("NewFolder");
 
-        Assert.AreEqual(AccessDeniedMessage, _outputWriter.output);
+        Assert.AreEqual(AccessDeniedMessage + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
@@ -192,7 +192,7 @@ public class MkDirCommandTests
     {
         var factory = new CommandFactory();
         factory.Register("mkdir", (outputWriter) => new MkDirCommand(_fileSystem, outputWriter));
-        return new CommandInvoker(new CommandParser(), factory, writer);
+        return new CommandInvoker(new Parser(), factory, writer);
     }
 
     [TestMethod]
@@ -205,7 +205,7 @@ public class MkDirCommandTests
 
         CreateInvoker(writer).ExecuteCommand(input);
 
-        Assert.IsNull(writer.output);
+        Assert.AreEqual(string.Empty, writer.OutputBuffer);
         Assert.IsTrue(_fileSystem.DirectoryExists(Path.Combine(_work, "Typed")));
     }
 
@@ -218,7 +218,7 @@ public class MkDirCommandTests
 
         invoker.ExecuteCommand("MKDIR Typed");
 
-        Assert.AreEqual("A subdirectory or file Typed already exists.", writer.output);
+        Assert.AreEqual("A subdirectory or file Typed already exists." + Environment.NewLine, writer.OutputBuffer);
     }
 
     [TestMethod]

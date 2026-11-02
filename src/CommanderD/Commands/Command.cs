@@ -3,14 +3,14 @@ using CommanderD.Shell;
 
 namespace CommanderD.Commands;
 
-public abstract class AbstractCommand
+public abstract class Command
 {
     public string Name { get; }
     public string Description { get; }
     
     public IOutputWriter OutputWriter { get; }
 
-    protected AbstractCommand(string name, string description, IOutputWriter outputWriter)
+    protected Command(string name, string description, IOutputWriter outputWriter)
     {
         Name = name;
         Description = description;

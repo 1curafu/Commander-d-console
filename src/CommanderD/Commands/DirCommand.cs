@@ -4,7 +4,7 @@ using CommanderD.Shell;
 
 namespace CommanderD.Commands;
 
-public class DirCommand : AbstractCommand
+public class DirCommand : Command
 {
     public DirCommand(IOutputWriter outputWriter)
         : base("dir", "Zeigt die Dateien und Unterverzeichnisse eines Verzeichnisses an.", outputWriter)

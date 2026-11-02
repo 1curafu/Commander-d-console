@@ -2,11 +2,11 @@ using CommanderD.Shell;
 
 namespace CommanderD.Commands;
 
-public class ExitCommand : AbstractCommand
+public class ExitCommand : Command
 {
     public bool ShouldExit { get; private set; }
 
-    public ExitCommand(IOutputWriter? outputWriter)
+    public ExitCommand(IOutputWriter outputWriter)
         : base("exit", "exits the shell", outputWriter)
     {
     }

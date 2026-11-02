@@ -5,11 +5,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CommanderD.Tests.Commands;
 
 [TestClass]
-public class VerCommandTests
+public class VersionCommandTests
 {
     
     private readonly CommandFactory _factory = new();
-    private readonly IOutputWriter _outputWriter = new TestOutputWriter();
+    private readonly TestOutputWriter _outputWriter = new TestOutputWriter();
     
     [TestMethod]
     public void Given_shell_is_running_When_I_enter_ver_Then_the_current_version_is_returned()
@@ -23,6 +23,6 @@ public class VerCommandTests
         
         command.Execute(null);
         
-        Assert.AreEqual(command.OutputWriter.output, versionString);
+        Assert.AreEqual(versionString + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 }

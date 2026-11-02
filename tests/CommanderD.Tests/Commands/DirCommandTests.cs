@@ -39,10 +39,10 @@ public class DirCommandTests
 
         command.Execute(context);
 
-        StringAssert.Contains(_outputWriter.output, $" Verzeichnis von {_testDir}");
-        StringAssert.Contains(_outputWriter.output, "test.txt");
-        StringAssert.Contains(_outputWriter.output, "1 Datei(en)              5 Bytes");
-        StringAssert.Contains(_outputWriter.output, "0 Verzeichnis(se)");
+        StringAssert.Contains(_outputWriter.OutputBuffer, $" Verzeichnis von {_testDir}");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "1 Datei(en)              5 Bytes");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "0 Verzeichnis(se)");
     }
 
     [TestMethod]
@@ -53,10 +53,10 @@ public class DirCommandTests
         var context = new CommandContext("dir",new[] { _testDir });
         command.Execute(context);
 
-        StringAssert.Contains(_outputWriter.output, $" Verzeichnis von {_testDir}");
-        StringAssert.Contains(_outputWriter.output, "test.txt");
-        StringAssert.Contains(_outputWriter.output, "1 Datei(en)             43 Bytes");
-        StringAssert.Contains(_outputWriter.output, "0 Verzeichnis(se)");
+        StringAssert.Contains(_outputWriter.OutputBuffer, $" Verzeichnis von {_testDir}");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "1 Datei(en)             43 Bytes");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "0 Verzeichnis(se)");
     }
 
     [TestMethod]
@@ -68,10 +68,10 @@ public class DirCommandTests
         var context = new CommandContext("dir",new[] { _testDir });
         command.Execute(context);
 
-        StringAssert.Contains(_outputWriter.output, "<DIR>          Unterordner");
-        StringAssert.Contains(_outputWriter.output, "test.txt");
-        StringAssert.Contains(_outputWriter.output, "1 Datei(en)             43 Bytes");
-        StringAssert.Contains(_outputWriter.output, "1 Verzeichnis(se)");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "<DIR>          Unterordner");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "1 Datei(en)             43 Bytes");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "1 Verzeichnis(se)");
     }
 
     [TestMethod]
@@ -81,8 +81,8 @@ public class DirCommandTests
         var context = new CommandContext("dir", new[] { _testDir });
         command.Execute(context);
 
-        StringAssert.Contains(_outputWriter.output, "0 Datei(en)");
-        StringAssert.Contains(_outputWriter.output, "0 Verzeichnis(se)");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "0 Datei(en)");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "0 Verzeichnis(se)");
     }
 
     [TestMethod]
@@ -98,8 +98,8 @@ public class DirCommandTests
             var context = new CommandContext("dir", new string[0]);
             command.Execute(context);
 
-            StringAssert.Contains(_outputWriter.output, $" Verzeichnis von {_testDir}");
-            StringAssert.Contains(_outputWriter.output, "test.txt");
+            StringAssert.Contains(_outputWriter.OutputBuffer, $" Verzeichnis von {Directory.GetCurrentDirectory()}");
+            StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
         }
         finally
         {
@@ -116,7 +116,7 @@ public class DirCommandTests
         var context = new CommandContext("dir", new[] { missing });
         command.Execute(context);
 
-        StringAssert.Contains(_outputWriter.output, "Das System kann den angegebenen Pfad nicht finden");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "Das System kann den angegebenen Pfad nicht finden");
     }
 
     [TestMethod]
@@ -128,9 +128,9 @@ public class DirCommandTests
         var context = new CommandContext("dir", new[] { Path.Combine(_testDir, "test.txt") });
         command.Execute(context);
 
-        StringAssert.Contains(_outputWriter.output, "test.txt");
-        Assert.IsFalse(_outputWriter.output.Contains("andere.txt"));
-        StringAssert.Contains(_outputWriter.output, "1 Datei(en)");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
+        Assert.IsFalse(_outputWriter.OutputBuffer.Contains("andere.txt"));
+        StringAssert.Contains(_outputWriter.OutputBuffer, "1 Datei(en)");
     }
 
     [TestMethod]
@@ -141,8 +141,8 @@ public class DirCommandTests
         var context = new CommandContext("dir", new[] { $"\"{_testDir}\"" });
         command.Execute(context);
 
-        StringAssert.Contains(_outputWriter.output, $" Verzeichnis von {_testDir}");
-        StringAssert.Contains(_outputWriter.output, "test.txt");
+        StringAssert.Contains(_outputWriter.OutputBuffer, $" Verzeichnis von {_testDir}");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
     }
 
     [TestMethod]
@@ -163,8 +163,10 @@ public class DirCommandTests
         var context = new CommandContext("dir", new[] { _testDir });
         command.Execute(context);
 
-        StringAssert.Contains(_outputWriter.output, $"{expected}    <DIR>          Unterordner");
-        StringAssert.Contains(_outputWriter.output, $"{expected}    {"5",14} test.txt");
+        string output = _outputWriter.OutputBuffer.Replace('\u202f', ' ');
+
+        StringAssert.Contains(output, $"{expected}    <DIR>          Unterordner");
+        StringAssert.Contains(output, $"{expected}    {"5",14} test.txt");
     }
 
     [TestMethod]
@@ -177,7 +179,7 @@ public class DirCommandTests
         var context = new CommandContext("dir", new[] { _testDir });
         command.Execute(context);
 
-        string[] lines = _outputWriter.output.Split(Environment.NewLine);
+        string[] lines = _outputWriter.OutputBuffer.TrimEnd().Split(Environment.NewLine);
         string fileLine = lines[^2];
         string dirLine = lines[^1];
 

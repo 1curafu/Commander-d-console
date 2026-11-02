@@ -3,7 +3,7 @@ using CommanderD.Shell;
 
 namespace CommanderD.Commands;
 
-public class SetColorCommand : AbstractCommand
+public class SetColorCommand : Command
 {
     private const string SyntaxErrorMessage = "The syntax of the command is incorrect.";
 

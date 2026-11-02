@@ -3,7 +3,7 @@ using CommanderD.Shell;
 
 namespace CommanderD.Commands;
 
-public class CdCommand : AbstractCommand
+public class CdCommand : Command
 {
     private const string PathNotFoundMessage = "The system cannot find the path specified.";
 

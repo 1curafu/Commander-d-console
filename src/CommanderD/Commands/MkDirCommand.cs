@@ -3,7 +3,7 @@ using CommanderD.Shell;
 
 namespace CommanderD.Commands;
 
-public class MkDirCommand : AbstractCommand
+public class MkDirCommand : Command
 {
     private const string SyntaxErrorMessage = "The syntax of the command is incorrect.";
     private const string AccessDeniedMessage = "Access is denied.";

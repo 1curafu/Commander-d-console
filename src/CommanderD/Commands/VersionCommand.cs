@@ -2,10 +2,10 @@ using CommanderD.Shell;
 
 namespace CommanderD.Commands;
 
-public class VerCommand : AbstractCommand
+public class VersionCommand : Command
 {
 
-    public VerCommand(IOutputWriter? outputWriter)
+    public VersionCommand(IOutputWriter outputWriter)
         :base("ver", "outputs the current OS version", outputWriter)
     {
         
