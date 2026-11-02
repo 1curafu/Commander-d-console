@@ -19,8 +19,8 @@ public class PromptTests
             Console.SetIn(new StringReader(input));
             Console.SetOut(console);
 
-            var invoker = new CommandInvoker(new CommandParser(), factory, new TestOutputWriter());
-            var shell = new CommandShell(invoker, fileSystem);
+            var invoker = new CommandInvoker(new Parser(), factory, new TestOutputWriter());
+            var shell = new CommanderD.Shell.Shell(invoker, fileSystem);
             shell.Run();
         }
         finally

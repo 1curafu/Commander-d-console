@@ -43,8 +43,8 @@ public class CommandFactoryTests
     }
 
     [TestMethod]
-    public void GetCommandNames_ContainsRegisteredName()
+    public void GetCommands_ContainsRegisteredName()
     {
-        CollectionAssert.Contains(CreateFactory().GetCommandNames(), "fake");
+        Assert.IsTrue(CreateFactory().GetCommands().Contains("fake"));
     }
 }

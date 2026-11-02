@@ -16,7 +16,7 @@ public class CdCommandTests
     private readonly string _spaced;
     private readonly FakeFileSystemService _fileSystem;
     private readonly CdCommand _command;
-    private readonly IOutputWriter _outputWriter;
+    private readonly TestOutputWriter _outputWriter;
 
     public CdCommandTests()
     {
@@ -51,7 +51,7 @@ public class CdCommandTests
     {
         Run();
 
-        Assert.AreEqual(_work, _command.OutputWriter.output);
+        Assert.AreEqual(_work + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
@@ -70,7 +70,7 @@ public class CdCommandTests
     {
         Run("src");
 
-        Assert.IsNull(_command.OutputWriter.output);
+        Assert.AreEqual(string.Empty, _outputWriter.OutputBuffer);
         Assert.AreEqual(_src, _fileSystem.ChangedTo);
         Assert.AreEqual(_src, _fileSystem.CurrentDirectory);
     }
@@ -80,7 +80,7 @@ public class CdCommandTests
     {
         Run(_src);
 
-        Assert.IsNull(_command.OutputWriter.output);
+        Assert.AreEqual(string.Empty, _outputWriter.OutputBuffer);
         Assert.AreEqual(_src, _fileSystem.ChangedTo);
     }
 
@@ -139,7 +139,7 @@ public class CdCommandTests
     {
         Run("missing");
 
-        Assert.AreEqual(PathNotFoundMessage, _command.OutputWriter.output);
+        Assert.AreEqual(PathNotFoundMessage + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
@@ -159,7 +159,7 @@ public class CdCommandTests
         
         Run("notes.txt");
 
-        Assert.AreEqual(PathNotFoundMessage, _command.OutputWriter.output);
+        Assert.AreEqual(PathNotFoundMessage + Environment.NewLine, _outputWriter.OutputBuffer);
         Assert.AreEqual(directoryBefore, _fileSystem.CurrentDirectory);
     }
 
@@ -181,7 +181,7 @@ public class CdCommandTests
 
         Run();
 
-        Assert.AreEqual(_src, _command.OutputWriter.output);
+        Assert.AreEqual(_src + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
@@ -191,7 +191,7 @@ public class CdCommandTests
 
         Run("???");
 
-        Assert.AreEqual(PathNotFoundMessage, _command.OutputWriter.output);
+        Assert.AreEqual(PathNotFoundMessage + Environment.NewLine, _outputWriter.OutputBuffer);
         Assert.AreEqual(0, _fileSystem.ChangeDirectoryCalls);
     }
 
@@ -202,7 +202,7 @@ public class CdCommandTests
 
         Run("a:b:c");
 
-        Assert.AreEqual(PathNotFoundMessage, _command.OutputWriter.output);
+        Assert.AreEqual(PathNotFoundMessage + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
@@ -212,7 +212,7 @@ public class CdCommandTests
 
         Run("src");
 
-        Assert.AreEqual(PathNotFoundMessage, _command.OutputWriter.output);
+        Assert.AreEqual(PathNotFoundMessage + Environment.NewLine, _outputWriter.OutputBuffer);
         Assert.AreEqual(_work, _fileSystem.CurrentDirectory);
     }
 
@@ -223,7 +223,7 @@ public class CdCommandTests
 
         Run("src");
 
-        Assert.AreEqual(PathNotFoundMessage, _command.OutputWriter.output);
+        Assert.AreEqual(PathNotFoundMessage + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
@@ -236,7 +236,7 @@ public class CdCommandTests
 
     private void RunLine(string input)
     {
-        CommandContext? context = new CommandParser().Parse(input);
+        CommandContext? context = new Parser().Parse(input);
 
         Assert.IsNotNull(context);
         Assert.AreEqual("cd", context.Name.ToLowerInvariant());
@@ -254,8 +254,8 @@ public class CdCommandTests
     [TestMethod]
     public void Cd_WithoutSpaceBeforeBackslash_ParsesLikeCdBackslash()
     {
-        var withoutSpace = new CommandParser().Parse("CD\\");
-        var withSpace = new CommandParser().Parse("CD \\");
+        var withoutSpace = new Parser().Parse("CD\\");
+        var withSpace = new Parser().Parse("CD \\");
 
         Assert.IsNotNull(withoutSpace);
         Assert.IsNotNull(withSpace);

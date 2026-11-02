@@ -1,7 +1,7 @@
 # How to add a command
 
 The foundation (CD-14) provides the shell, the parser, the factory, the services and
-`AbstractCommand`. A command class is not part of it. Every command story creates its
+`Command`. A command class is not part of it. Every command story creates its
 own class and registers it in the `CommandFactory`. The empty file
 `src/CommanderD/Commands/<Name>Command.cs` of your story already exists.
 
@@ -16,14 +16,14 @@ git switch -c feature/CD-<number>-<short-name>
 ## 2. Create the class
 
 File `src/CommanderD/Commands/<Name>Command.cs`. The class extends
-`AbstractCommand` and implements `Execute`:
+`Command` and implements `Execute`:
 
 ```csharp
 using CommanderD.Services;
 
 namespace CommanderD.Commands;
 
-public class ExampleCommand : AbstractCommand
+public class ExampleCommand : Command
 {
     public ExampleCommand(IFileSystemService fileService, IConsoleService consoleService)
         : base("example", "Shows how a command looks.", fileService, consoleService)

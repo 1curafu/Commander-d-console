@@ -9,7 +9,7 @@ C:\>dir c:\windows /A:R
 
 | Term | Meaning | In our code |
 |---|---|---|
-| **Prompt** | The text in front of the cursor. It shows the current directory and ends with `>`, here `C:\>`. | `CommandShell` writes it from `CurrentDirectory` (CD-9) |
+| **Prompt** | The text in front of the cursor. It shows the current directory and ends with `>`, here `C:\>`. | `Shell` writes it from `CurrentDirectory` (CD-9) |
 | **Input** (command line) | Everything typed after the prompt until Enter, here `dir c:\windows /A:R`. | `CommandContext.RawInput` |
 | **Command** | The first word of the input. It names the operation, here `dir`. Not case sensitive: `dir`, `DIR` and `Dir` are the same. | `CommandContext.CommandName`, `ICommand` |
 | **Parameter** | Everything after the command name, here `c:\windows /A:R`. | `CommandContext.Arguments` (the whole list) |
@@ -24,8 +24,8 @@ C:\>dir c:\windows /A:R
 | **Current directory** (working directory) | The directory where relative paths start. It is shown in the prompt and changed by `CD`. | `IFileSystemService.CurrentDirectory` |
 | **Output message** | The text a command prints, for results and for errors. | `CommandResult.OutputMessage` |
 | **Exit code** | Number that tells if a command worked: `0` is success. In our code this is the `Success` flag. | `CommandResult.Success` |
-| **Shell** | The program that repeats prompt, input, execution. | `CommandShell` |
-| **Invoker** | Command Pattern: the class that executes commands without knowing them. | `CommandShell` |
+| **Shell** | The program that repeats prompt, input, execution. | `Shell` |
+| **Invoker** | Command Pattern: the class that executes commands without knowing them. | `Shell` |
 | **Receiver** | Command Pattern: the class that does the real work. | `IFileSystemService`, `IConsoleService` |
 | **Factory** | Creates the matching command from the command name. | `CommandFactory` |
 
