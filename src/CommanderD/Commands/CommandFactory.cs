@@ -14,6 +14,7 @@ public class CommandFactory
             { "mkdir", (IOutputWriter outputWriter) => new MkDirCommand(new FileSystemService(), outputWriter) },
             { "md", (IOutputWriter outputWriter) => new MkDirCommand(new FileSystemService(), outputWriter) },
             { "dir", (IOutputWriter outputWriter) => new DirCommand(outputWriter) },
+            { "del", (IOutputWriter outputWriter) => new DelCommand(new FileSystemService(), outputWriter) },
             { "color", (IOutputWriter outputWriter) => new SetColorCommand(new ConsoleService(), outputWriter) },
         };
 
