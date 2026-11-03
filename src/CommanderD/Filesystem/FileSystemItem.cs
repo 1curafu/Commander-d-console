@@ -2,7 +2,7 @@ namespace CommanderD.Filesystem;
 
 public abstract class FileSystemItem(string name, string path)
 {
-    private string Name { get; set; } = name;
-    private string Path { get; set; } = path;
-    private DateTime CreatedOn { get; set; } = DateTime.Now;
+    public string Name { get; set; } = name;
+    public string Path { get; set; } = path;
+    public DateTime CreatedOn { get; set; } = DateTime.Now;
 }
