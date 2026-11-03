@@ -33,42 +33,50 @@ public class SetColorCommandTests
 
 
     [TestMethod]
-    public void Color_0A_BlackBackgroundGreenText()
+    public void Color_Green_ChangesOnlyForeground()
     {
-        Run("0A");
+        Run("green");
 
         Assert.AreEqual(ConsoleColor.Black, _console.BackgroundColor);
         Assert.AreEqual(ConsoleColor.Green, _console.ForegroundColor);
     }
 
     [TestMethod]
-    [DataRow("1F", ConsoleColor.DarkBlue, ConsoleColor.White)]
-    [DataRow("F0", ConsoleColor.White, ConsoleColor.Black)]
-    [DataRow("4E", ConsoleColor.DarkRed, ConsoleColor.Yellow)]
-    [DataRow("07", ConsoleColor.Black, ConsoleColor.Gray)]
-    [DataRow("2C", ConsoleColor.DarkGreen, ConsoleColor.Red)]
-    public void Color_TwoDigits_FirstIsBackgroundSecondIsForeground(string code, ConsoleColor background, ConsoleColor foreground)
+    [DataRow("white", "on", "darkblue", ConsoleColor.DarkBlue, ConsoleColor.White)]
+    [DataRow("black", "on", "white", ConsoleColor.White, ConsoleColor.Black)]
+    [DataRow("yellow", "on", "darkred", ConsoleColor.DarkRed, ConsoleColor.Yellow)]
+    [DataRow("red", "on", "darkgreen", ConsoleColor.DarkGreen, ConsoleColor.Red)]
+    public void Color_ForegroundOnBackground_SetsBoth(string foreground, string keyword, string background, ConsoleColor expectedBackground, ConsoleColor expectedForeground)
     {
-        Run(code);
+        Run(foreground, keyword, background);
 
-        Assert.AreEqual(background, _console.BackgroundColor);
-        Assert.AreEqual(foreground, _console.ForegroundColor);
+        Assert.AreEqual(expectedBackground, _console.BackgroundColor);
+        Assert.AreEqual(expectedForeground, _console.ForegroundColor);
     }
 
     [TestMethod]
-    public void Color_LowerCaseCode_Works()
+    public void Color_IsCaseInsensitive()
     {
-        Run("0a");
+        Run("YELLOW", "On", "DarkBlue");
 
-        Assert.AreEqual(ConsoleColor.Black, _console.BackgroundColor);
-        Assert.AreEqual(ConsoleColor.Green, _console.ForegroundColor);
+        Assert.AreEqual(ConsoleColor.DarkBlue, _console.BackgroundColor);
+        Assert.AreEqual(ConsoleColor.Yellow, _console.ForegroundColor);
     }
 
     [TestMethod]
-    public void Color_OneDigit_ChangesOnlyForeground()
+    public void Color_GreyIsAliasForGray()
     {
-        Run("1F");
-        Run("A");
+        Run("green");
+        Run("grey");
+
+        Assert.AreEqual(ConsoleColor.Gray, _console.ForegroundColor);
+    }
+
+    [TestMethod]
+    public void Color_ForegroundOnly_KeepsCurrentBackground()
+    {
+        Run("white", "on", "darkblue");
+        Run("green");
 
         Assert.AreEqual(ConsoleColor.DarkBlue, _console.BackgroundColor);
         Assert.AreEqual(ConsoleColor.Green, _console.ForegroundColor);
@@ -77,7 +85,7 @@ public class SetColorCommandTests
     [TestMethod]
     public void Color_NoArgument_RestoresDefaultColors()
     {
-        Run("1F");
+        Run("white", "on", "darkblue");
 
         Run();
 
@@ -88,9 +96,9 @@ public class SetColorCommandTests
 
 
     [TestMethod]
-    public void Color_ValidCode_AppliesColorsOnceAndPrintsNothing()
+    public void Color_ValidName_AppliesColorsOnceAndPrintsNothing()
     {
-        Run("0A");
+        Run("green");
 
         Assert.AreEqual(1, _console.SetColorsCalls);
         Assert.AreEqual(string.Empty, _outputWriter.OutputBuffer);
@@ -98,12 +106,9 @@ public class SetColorCommandTests
 
 
     [TestMethod]
-    [DataRow("00")]
-    [DataRow("AA")]
-    [DataRow("ff")]
-    public void Color_SameBackgroundAndForeground_IsPrevented(string code)
+    public void Color_SameBackgroundAndForeground_IsPrevented()
     {
-        Run(code);
+        Run("green", "on", "green");
 
         Assert.AreEqual(0, _console.SetColorsCalls);
         Assert.AreEqual(ConsoleColor.Black, _console.BackgroundColor);
@@ -112,32 +117,44 @@ public class SetColorCommandTests
     }
 
     [TestMethod]
-    public void Color_OneDigitEqualToCurrentBackground_IsPrevented()
+    public void Color_ForegroundEqualToCurrentBackground_IsPrevented()
     {
-        Run("0");
+        Run("black");
 
         Assert.AreEqual(0, _console.SetColorsCalls);
     }
 
 
     [TestMethod]
-    [DataRow("zz")]
-    [DataRow("G0")]
-    [DataRow("123")]
-    [DataRow("-1")]
-    [DataRow("")]
-    public void Color_InvalidCode_ShowsSyntaxMessageAndChangesNothing(string code)
+    [DataRow("purple")]
+    [DataRow("1F")]
+    [DataRow("0A")]
+    [DataRow("gren")]
+    public void Color_UnknownName_ShowsSyntaxMessageAndChangesNothing(string name)
     {
-        Run(code);
+        Run(name);
 
         Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
         Assert.AreEqual(0, _console.SetColorsCalls);
     }
 
     [TestMethod]
-    public void Color_TooManyArguments_ShowsSyntaxMessage()
+    public void Color_UnknownBackground_ShowsSyntaxMessageAndChangesNothing()
     {
-        Run("0A", "1F");
+        Run("green", "on", "purple");
+
+        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
+        Assert.AreEqual(0, _console.SetColorsCalls);
+    }
+
+    [TestMethod]
+    [DataRow("green blue")]
+    [DataRow("green on")]
+    [DataRow("green to blue")]
+    [DataRow("green on blue red")]
+    public void Color_WrongArgumentShape_ShowsSyntaxMessage(string arguments)
+    {
+        Run(arguments.Split(' '));
 
         Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
         Assert.AreEqual(0, _console.SetColorsCalls);
@@ -152,9 +169,9 @@ public class SetColorCommandTests
     }
 
     [TestMethod]
-    [DataRow("color 0A")]
-    [DataRow("COLOR 0A")]
-    [DataRow("Color 0a")]
+    [DataRow("color green")]
+    [DataRow("COLOR GREEN")]
+    [DataRow("Color Green")]
     public void Color_TypedIntoShell_ChangesColor(string input)
     {
         var writer = new TestOutputWriter();
