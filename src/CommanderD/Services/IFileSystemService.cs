@@ -7,6 +7,10 @@ public interface IFileSystemService
     string ResolvePath(string path);
 
     bool DirectoryExists(string path);
+    
+    bool FileExists(string path);
 
     void ChangeDirectory(string path);
+
+    void CreateDirectory(string path);
 }

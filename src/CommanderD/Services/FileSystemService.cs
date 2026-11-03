@@ -14,8 +14,18 @@ public class FileSystemService : IFileSystemService
         return Directory.Exists(path);
     }
 
+    public bool FileExists(string path)
+    {
+        return File.Exists(path);
+    }
+
     public void ChangeDirectory(string path)
     {
         Directory.SetCurrentDirectory(path);
+    }
+
+    public void CreateDirectory(string path)
+    {
+        Directory.CreateDirectory(path);
     }
 }

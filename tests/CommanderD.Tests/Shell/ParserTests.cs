@@ -4,9 +4,9 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CommanderD.Tests.Shell;
 
 [TestClass]
-public class CommandParserTests
+public class ParserTests
 {
-    private readonly CommandParser parser = new CommandParser();
+    private readonly Parser parser = new Parser();
 
     [TestMethod]
     public void Parse_NameOnly_HasNoArguments()
@@ -57,5 +57,27 @@ public class CommandParserTests
     public void Parse_EmptyInput_ReturnsNull(string input)
     {
         Assert.IsNull(parser.Parse(input));
+    }
+
+    [TestMethod]
+    [DataRow("ver", "ver")]
+    [DataRow("  CD  src ", "CD")]
+    [DataRow("cd..", "cd")]
+    [DataRow("cd\\", "cd")]
+    public void ParseCommand_ReturnsCommandName(string input, string expected)
+    {
+        Assert.AreEqual(expected, parser.ParseCommand(input));
+    }
+
+    [TestMethod]
+    public void ParseParameters_ReturnsArguments()
+    {
+        CollectionAssert.AreEqual(new[] { "one", "two" }, parser.ParseParameters("fake one two"));
+    }
+
+    [TestMethod]
+    public void ParseParameters_NoArguments_ReturnsEmptyArray()
+    {
+        Assert.AreEqual(0, parser.ParseParameters("ver").Length);
     }
 }

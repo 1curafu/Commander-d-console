@@ -16,6 +16,10 @@ public class FakeFileSystemService : IFileSystemService
 
     public Exception? ChangeDirectoryException { get; set; }
 
+    public Exception? CreateDirectoryException { get; set; }
+
+    public int CreateDirectoryCalls { get; private set; }
+
     public FakeFileSystemService(string currentDirectory)
     {
         CurrentDirectory = currentDirectory;
@@ -42,6 +46,11 @@ public class FakeFileSystemService : IFileSystemService
         return directories.Contains(path);
     }
 
+    public bool FileExists(string path)
+    {
+        return File.Exists(path);
+    }
+
     public void ChangeDirectory(string path)
     {
         ChangeDirectoryCalls++;
@@ -53,5 +62,17 @@ public class FakeFileSystemService : IFileSystemService
 
         ChangedTo = path;
         CurrentDirectory = path;
+    }
+
+    public void CreateDirectory(string path)
+    {
+        CreateDirectoryCalls++;
+
+        if (CreateDirectoryException != null)
+        {
+            throw CreateDirectoryException;
+        }
+
+        directories.Add(path);
     }
 }
