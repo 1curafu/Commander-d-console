@@ -2,7 +2,7 @@ using CommanderD.Commands;
 
 namespace CommanderD.Shell;
 
-public class CommandParser
+public class Parser
 {
     private static readonly char[] Whitespace = { ' ', '\t' };
     private static readonly char[] NameEnd = { ' ', '\t', '.', '\\', '/' };
@@ -14,7 +14,24 @@ public class CommandParser
             return null;
         }
 
+        return new CommandContext(ParseCommand(input), ParseParameters(input));
+    }
+
+    public string ParseCommand(string input)
+    {
         string line = input.Trim();
+        return line.Substring(0, FindNameEnd(line));
+    }
+
+    public string[] ParseParameters(string input)
+    {
+        string line = input.Trim();
+        string rest = line.Substring(FindNameEnd(line)).Trim();
+        return rest.Split(Whitespace, StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    private static int FindNameEnd(string line)
+    {
         int end = line.IndexOfAny(NameEnd);
 
         if (end == 0)
@@ -27,10 +44,6 @@ public class CommandParser
             end = line.Length;
         }
 
-        string name = line.Substring(0, end);
-        string rest = line.Substring(end).Trim();
-        string[] arguments = rest.Split(Whitespace, StringSplitOptions.RemoveEmptyEntries);
-
-        return new CommandContext(name, arguments);
+        return end;
     }
 }

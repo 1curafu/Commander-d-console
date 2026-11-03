@@ -5,6 +5,8 @@ namespace CommanderD.Tests.Fakes;
 public class FakeFileSystemService : IFileSystemService
 {
     private readonly HashSet<string> directories = new HashSet<string>(StringComparer.Ordinal);
+    private readonly HashSet<string> files = new HashSet<string>(StringComparer.Ordinal);
+    private readonly HashSet<string> protectedFiles = new HashSet<string>(StringComparer.Ordinal);
 
     public string CurrentDirectory { get; set; }
 
@@ -16,6 +18,14 @@ public class FakeFileSystemService : IFileSystemService
 
     public Exception? ChangeDirectoryException { get; set; }
 
+    public Exception? CreateDirectoryException { get; set; }
+
+    public int CreateDirectoryCalls { get; private set; }
+
+    public Exception? DeleteFileException { get; set; }
+
+    public int DeleteFileCalls { get; private set; }
+
     public FakeFileSystemService(string currentDirectory)
     {
         CurrentDirectory = currentDirectory;
@@ -25,6 +35,17 @@ public class FakeFileSystemService : IFileSystemService
     public void AddDirectory(string path)
     {
         directories.Add(path);
+    }
+
+    public void AddFile(string path)
+    {
+        files.Add(path);
+    }
+
+    public void AddProtectedFile(string path)
+    {
+        files.Add(path);
+        protectedFiles.Add(path);
     }
 
     public string ResolvePath(string path)
@@ -42,6 +63,11 @@ public class FakeFileSystemService : IFileSystemService
         return directories.Contains(path);
     }
 
+    public bool FileExists(string path)
+    {
+        return files.Contains(path);
+    }
+
     public void ChangeDirectory(string path)
     {
         ChangeDirectoryCalls++;
@@ -53,5 +79,34 @@ public class FakeFileSystemService : IFileSystemService
 
         ChangedTo = path;
         CurrentDirectory = path;
+    }
+
+    public void CreateDirectory(string path)
+    {
+        CreateDirectoryCalls++;
+
+        if (CreateDirectoryException != null)
+        {
+            throw CreateDirectoryException;
+        }
+
+        directories.Add(path);
+    }
+
+    public void DeleteFile(string path)
+    {
+        DeleteFileCalls++;
+
+        if (DeleteFileException != null)
+        {
+            throw DeleteFileException;
+        }
+
+        files.Remove(path);
+    }
+
+    public bool IsProtectedFile(string path)
+    {
+        return protectedFiles.Contains(path);
     }
 }

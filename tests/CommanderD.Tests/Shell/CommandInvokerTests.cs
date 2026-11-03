@@ -8,52 +8,60 @@ namespace CommanderD.Tests.Shell;
 [TestClass]
 public class CommandInvokerTests
 {
-    private readonly FakeCommand fake = new FakeCommand();
-    private readonly CommandInvoker invoker;
+    private FakeCommand _fakeCommand;
+    private readonly CommandInvoker _invoker;
+    private readonly TestOutputWriter _outputWriter = new TestOutputWriter();
+
 
     public CommandInvokerTests()
     {
         var factory = new CommandFactory();
-        factory.Register("fake", () => fake);
-        invoker = new CommandInvoker(new CommandParser(), factory);
+        factory.Register("fake", (outputWriter) => new FakeCommand("fake", outputWriter));
+        _invoker = new CommandInvoker(new Parser(), factory, _outputWriter);
     }
 
     [TestMethod]
     public void ExecuteCommand_KnownCommand_ReturnsItsResult()
     {
-        var result = invoker.ExecuteCommand("fake");
-
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual("fake output", result.OutputMessage);
+        var command = _invoker.ExecuteCommand("fake");
+        Assert.IsNotNull(command);
+        Assert.AreEqual("fake", _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
     public void ExecuteCommand_KnownCommand_PassesArguments()
     {
-        invoker.ExecuteCommand("fake one two");
-
-        Assert.IsNotNull(fake.LastContext);
-        CollectionAssert.AreEqual(new[] { "one", "two" }, fake.LastContext.Arguments);
+        var command = (FakeCommand)_invoker.ExecuteCommand("fake one two");
+        
+        Assert.IsNotNull(command.LastContext);
+        CollectionAssert.AreEqual(new[] { "one", "two" }, command.LastContext.Arguments);
     }
 
     [TestMethod]
     public void ExecuteCommand_UnknownCommand_ReturnsNotRecognizedMessage()
     {
-        var result = invoker.ExecuteCommand("foo");
-
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual(
-            "'foo' is not recognized as an internal or external command, operable program or batch file.",
-            result.OutputMessage);
+        var command = _invoker.ExecuteCommand("foo");
+        
+        Assert.IsNull(command);
+        Assert.AreEqual("'foo' is not recognized as an internal or external command, operable program or batch file." + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
     public void ExecuteCommand_EmptyInput_DoesNothing()
     {
-        var result = invoker.ExecuteCommand("");
+        var command = _invoker.ExecuteCommand("");
+        Assert.IsNull(command);
+    }
 
-        Assert.IsTrue(result.Success);
-        Assert.AreEqual("", result.OutputMessage);
-        Assert.IsFalse(result.ShouldExit);
+    [TestMethod]
+    public void Constructor_OnlyOutputWriter_UsesDefaultFactoryAndParser()
+    {
+        var writer = new TestOutputWriter();
+        var invoker = new CommandInvoker(writer);
+
+        var command = invoker.ExecuteCommand("ver");
+
+        Assert.IsNotNull(command);
+        Assert.AreEqual(Environment.OSVersion + Environment.NewLine, writer.OutputBuffer);
     }
 }

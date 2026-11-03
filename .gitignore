@@ -6,3 +6,5 @@ obj/
 *.suo
 TestResults/
 .DS_Store
+.$*.bkp
+.$*.dtmp
