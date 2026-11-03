@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using CommanderD.Filesystem;
 
 namespace CommanderD.Services;
 
@@ -19,6 +20,18 @@ public class PersistenceService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         FilePath = filePath;
+    }
+
+    public void SaveDrives(IEnumerable<Drive> drives)
+    {
+        Save(drives.Select(PersistenceMapper.ToData).ToList());
+    }
+
+    public List<Drive> LoadDrives()
+    {
+        List<DriveData>? data = Load<List<DriveData>>();
+
+        return data?.Select(PersistenceMapper.ToDrive).ToList() ?? new List<Drive>();
     }
 
     public void Save<T>(T data)
