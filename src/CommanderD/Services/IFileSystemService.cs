@@ -17,4 +17,6 @@ public interface IFileSystemService
     void DeleteFile(string path);
 
     bool IsProtectedFile(string path);
+
+    IReadOnlyList<DirectoryEntry> GetEntries(string path);
 }

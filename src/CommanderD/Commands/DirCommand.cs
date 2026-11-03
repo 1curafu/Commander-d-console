@@ -1,90 +1,83 @@
 using System.Globalization;
 using System.Text;
+using CommanderD.Services;
 using CommanderD.Shell;
 
 namespace CommanderD.Commands;
 
 public class DirCommand : Command
 {
-    public DirCommand(IOutputWriter outputWriter)
-        : base("dir", "Zeigt die Dateien und Unterverzeichnisse eines Verzeichnisses an.", outputWriter)
+    private readonly IFileSystemService _fileSystemService;
+
+    public DirCommand(IFileSystemService fileSystemService, IOutputWriter outputWriter)
+        : base("dir", "Displays a list of files and subdirectories in a directory.", outputWriter)
     {
+        _fileSystemService = fileSystemService;
     }
 
     public override void Execute(CommandContext context)
     {
-        
         string param = string.Join(" ", context.Arguments);
-        string path = string.IsNullOrWhiteSpace(param)
-            ? Directory.GetCurrentDirectory()
-            : param.Trim('"');
 
         try
         {
-            DirectoryInfo dir;
-            DirectoryInfo[] dirs;
-            FileInfo[] files;
+            string target = string.IsNullOrWhiteSpace(param)
+                ? _fileSystemService.CurrentDirectory
+                : _fileSystemService.ResolvePath(param.Trim('"'));
 
-            if (File.Exists(path))
-            {
-            
-                var file = new FileInfo(path);
-                dir = file.Directory!;
-                dirs = [];
-                files = [file];
-            }
-            else
-            {
-                dir = new DirectoryInfo(path);
-                dirs = dir.GetDirectories();
-                files = dir.GetFiles();
-            }
+            IReadOnlyList<DirectoryEntry> entries = _fileSystemService.GetEntries(target);
+            string directory = _fileSystemService.DirectoryExists(target) ? target : GetParent(target);
 
             var output = new StringBuilder();
-            output.AppendLine($" Verzeichnis von {dir.FullName}");
+            output.AppendLine($" Directory of {directory}");
             output.AppendLine();
 
             int dirCount = 0, fileCount = 0;
             long totalSize = 0;
 
-            var fmt = CultureInfo.CurrentCulture.DateTimeFormat;
+            DateTimeFormatInfo fmt = CultureInfo.CurrentCulture.DateTimeFormat;
             string dateTimePattern = $"{fmt.ShortDatePattern}  {fmt.ShortTimePattern}";
 
-            foreach (var d in dirs)
+            foreach (DirectoryEntry entry in entries.Where(e => e.IsDirectory))
             {
-                output.AppendLine($"{d.LastWriteTime.ToString(dateTimePattern)}    <DIR>          {d.Name}");
+                output.AppendLine($"{entry.CreatedOn.ToString(dateTimePattern)}    <DIR>          {entry.Name}");
                 dirCount++;
             }
 
-            foreach (var f in files)
+            foreach (DirectoryEntry entry in entries.Where(e => !e.IsDirectory))
             {
-                output.AppendLine($"{f.LastWriteTime.ToString(dateTimePattern)}    {f.Length,14:N0} {f.Name}");
+                output.AppendLine($"{entry.CreatedOn.ToString(dateTimePattern)}    {entry.Size,14:N0} {entry.Name}");
                 fileCount++;
-                totalSize += f.Length;
+                totalSize += entry.Size;
             }
 
-            long freeBytes = new DriveInfo(dir.Root.FullName).AvailableFreeSpace;
-
-            output.AppendLine($"{fileCount,16} Datei(en) {totalSize,14:N0} Bytes");
-            output.Append($"{dirCount,16} Verzeichnis(se), {freeBytes,14:N0} Bytes frei");
+            output.AppendLine($"{fileCount,16} File(s) {totalSize,14:N0} bytes");
+            output.Append($"{dirCount,16} Dir(s)");
 
             OutputWriter.WriteLn(output.ToString());
         }
         catch (DirectoryNotFoundException)
         {
-            OutputWriter.WriteLn($"Das System kann den angegebenen Pfad nicht finden: {param}");
+            OutputWriter.WriteLn("The system cannot find the path specified.");
         }
         catch (UnauthorizedAccessException)
         {
-            OutputWriter.WriteLn($"Zugriff verweigert: {param}");
+            OutputWriter.WriteLn("Access is denied.");
         }
         catch (ArgumentException)
         {
-            OutputWriter.WriteLn($"Ungültiger Pfad: {param}");
+            OutputWriter.WriteLn("The filename, directory name, or volume label syntax is incorrect.");
         }
         catch (IOException e)
         {
-            OutputWriter.WriteLn($"Fehler beim Lesen des Verzeichnisses: {e.Message}");
+            OutputWriter.WriteLn($"Error reading the directory: {e.Message}");
         }
+    }
+
+    private static string GetParent(string path)
+    {
+        int index = path.LastIndexOf('\\');
+
+        return index <= 2 ? path[..3] : path[..index];
     }
 }

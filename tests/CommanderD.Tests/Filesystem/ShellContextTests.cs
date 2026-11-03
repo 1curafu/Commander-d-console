@@ -123,4 +123,21 @@ public class ShellContextTests
 
         Assert.AreSame(context.Drives[0].RootFolder, context.CurrentFolder);
     }
+
+    [TestMethod]
+    public void SaveThenLoad_RestoresFileContentAndCreationDate()
+    {
+        var original = new ShellContext(_service);
+        var date = new DateTime(2026, 10, 29, 14, 10, 0);
+        original.CurrentFolder.AddChildItem(
+            new CommanderD.Filesystem.File("a.txt", "C:\\a.txt") { Content = "Hallo", CreatedOn = date });
+        original.Save();
+
+        var loaded = new ShellContext(_service);
+        loaded.Load();
+
+        var file = (CommanderD.Filesystem.File)loaded.Drives[0].RootFolder.GetChildItems()[0];
+        Assert.AreEqual("Hallo", file.Content);
+        Assert.AreEqual(date, file.CreatedOn);
+    }
 }

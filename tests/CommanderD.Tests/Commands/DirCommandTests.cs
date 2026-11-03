@@ -1,148 +1,173 @@
 using System.Globalization;
 using CommanderD.Commands;
+using CommanderD.Filesystem;
+using CommanderD.Services;
 using CommanderD.Shell;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using FsFile = CommanderD.Filesystem.File;
 
 namespace CommanderD.Tests.Commands;
 
 [TestClass]
 public class DirCommandTests
 {
-    private readonly string _testDir;
     private readonly CultureInfo _originalCulture;
     private readonly TestOutputWriter _outputWriter = new();
+    private readonly ShellContext _context;
+    private readonly FileSystemService _fileSystem;
+    private readonly DirCommand _command;
 
     public DirCommandTests()
     {
-       
-        _testDir = Path.Combine(Path.GetTempPath(), "DirCommandTests_" + Guid.NewGuid());
-        Directory.CreateDirectory(_testDir);
-
-   
         _originalCulture = CultureInfo.CurrentCulture;
         CultureInfo.CurrentCulture = new CultureInfo("de-CH");
+
+        _context = new ShellContext(new PersistenceService(Path.Combine(Path.GetTempPath(), "commanderd-dir-tests-unused.json")));
+        _fileSystem = new FileSystemService(_context);
+        _command = new DirCommand(_fileSystem, _outputWriter);
     }
 
     [TestCleanup]
     public void Cleanup()
     {
         CultureInfo.CurrentCulture = _originalCulture;
-        Directory.Delete(_testDir, true);
+    }
+
+    private void AddFile(Folder folder, string name, string content)
+    {
+        folder.AddChildItem(new FsFile(name, @"C:\" + name) { Content = content });
+    }
+
+    private void Run(params string[] arguments)
+    {
+        _command.Execute(new CommandContext("dir", arguments));
     }
 
     [TestMethod]
     public void Execute_FolderWithOneFile_ListsFileAndSummary()
     {
-        File.WriteAllText(Path.Combine(_testDir, "test.txt"), "Hallo");
-        var command = new DirCommand(_outputWriter);
-        var context = new CommandContext("dir", new[] { _testDir });
+        AddFile(_context.CurrentFolder, "test.txt", "Hallo");
 
-        command.Execute(context);
+        Run();
 
-        StringAssert.Contains(_outputWriter.OutputBuffer, $" Verzeichnis von {_testDir}");
+        StringAssert.Contains(_outputWriter.OutputBuffer, @" Directory of C:\");
         StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "1 Datei(en)              5 Bytes");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "0 Verzeichnis(se)");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "1 File(s)              5 bytes");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "0 Dir(s)");
     }
 
     [TestMethod]
-    public void Execute_FileWithOneFile_ListsFileAndSummary()
+    public void Execute_DirectoryWithFileAndSubfolder_ListsBothAndSummary()
     {
-        File.WriteAllText(Path.Combine(_testDir, "test.txt"), "Hallo ich heisse florian und ich mag karate");
-        var command = new DirCommand(_outputWriter);
-        var context = new CommandContext("dir",new[] { _testDir });
-        command.Execute(context);
+        AddFile(_context.CurrentFolder, "test.txt", "Hallo ich heisse florian und ich mag karate");
+        _fileSystem.CreateDirectory("Unterordner");
 
-        StringAssert.Contains(_outputWriter.OutputBuffer, $" Verzeichnis von {_testDir}");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "1 Datei(en)             43 Bytes");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "0 Verzeichnis(se)");
-    }
-
-    [TestMethod]
-    public void Execute_DirectoryWithOneFile_ListsFileAndSummary()
-    {
-        File.WriteAllText(Path.Combine(_testDir, "test.txt"), "Hallo ich heisse florian und ich mag karate");
-        Directory.CreateDirectory(Path.Combine(_testDir, "Unterordner"));
-        var command = new DirCommand(_outputWriter);
-        var context = new CommandContext("dir",new[] { _testDir });
-        command.Execute(context);
+        Run();
 
         StringAssert.Contains(_outputWriter.OutputBuffer, "<DIR>          Unterordner");
         StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "1 Datei(en)             43 Bytes");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "1 Verzeichnis(se)");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "1 File(s)             43 bytes");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "1 Dir(s)");
     }
 
     [TestMethod]
     public void Execute_EmptyDirectory_ShowsZeroFilesAndFolders()
     {
-        var command = new DirCommand(_outputWriter);
-        var context = new CommandContext("dir", new[] { _testDir });
-        command.Execute(context);
+        Run();
 
-        StringAssert.Contains(_outputWriter.OutputBuffer, "0 Datei(en)");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "0 Verzeichnis(se)");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "0 File(s)");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "0 Dir(s)");
     }
 
     [TestMethod]
     public void Execute_NoArgument_ListsCurrentDirectory()
     {
-        File.WriteAllText(Path.Combine(_testDir, "test.txt"), "Hallo");
-        string originalDir = Directory.GetCurrentDirectory();
-        Directory.SetCurrentDirectory(_testDir);
+        _fileSystem.CreateDirectory("docs");
+        _fileSystem.ChangeDirectory("docs");
+        AddFile(_context.CurrentFolder, "inside.txt", "x");
 
-        try
-        {
-            var command = new DirCommand(_outputWriter);
-            var context = new CommandContext("dir", new string[0]);
-            command.Execute(context);
+        Run();
 
-            StringAssert.Contains(_outputWriter.OutputBuffer, $" Verzeichnis von {Directory.GetCurrentDirectory()}");
-            StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
-        }
-        finally
-        {
-            // Sonst kann der Temp-Ordner im Cleanup nicht gelöscht werden
-            Directory.SetCurrentDirectory(originalDir);
-        }
+        StringAssert.Contains(_outputWriter.OutputBuffer, @" Directory of C:\docs");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "inside.txt");
+    }
+
+    [TestMethod]
+    public void Execute_RelativeFolderAsArgument_ListsThatFolder()
+    {
+        _fileSystem.CreateDirectory("docs");
+        _fileSystem.ChangeDirectory("docs");
+        AddFile(_context.CurrentFolder, "inside.txt", "x");
+        _fileSystem.ChangeDirectory(@"\");
+
+        Run("docs");
+
+        StringAssert.Contains(_outputWriter.OutputBuffer, @" Directory of C:\docs");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "inside.txt");
     }
 
     [TestMethod]
     public void Execute_DirectoryDoesNotExist_WritesError()
     {
-        string missing = Path.Combine(_testDir, "gibtsnicht");
-        var command = new DirCommand(_outputWriter);
-        var context = new CommandContext("dir", new[] { missing });
-        command.Execute(context);
+        Run("gibtsnicht");
 
-        StringAssert.Contains(_outputWriter.OutputBuffer, "Das System kann den angegebenen Pfad nicht finden");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "The system cannot find the path specified.");
     }
 
     [TestMethod]
     public void Execute_FileAsArgument_ListsOnlyThisFile()
     {
-        File.WriteAllText(Path.Combine(_testDir, "test.txt"), "Hallo");
-        File.WriteAllText(Path.Combine(_testDir, "andere.txt"), "Hallo");
-        var command = new DirCommand(_outputWriter);
-        var context = new CommandContext("dir", new[] { Path.Combine(_testDir, "test.txt") });
-        command.Execute(context);
+        AddFile(_context.CurrentFolder, "test.txt", "Hallo");
+        AddFile(_context.CurrentFolder, "andere.txt", "Hallo");
 
+        Run("test.txt");
+
+        StringAssert.Contains(_outputWriter.OutputBuffer, @" Directory of C:\");
         StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
         Assert.IsFalse(_outputWriter.OutputBuffer.Contains("andere.txt"));
-        StringAssert.Contains(_outputWriter.OutputBuffer, "1 Datei(en)");
+        StringAssert.Contains(_outputWriter.OutputBuffer, "1 File(s)");
     }
 
     [TestMethod]
     public void Execute_PathInQuotes_RemovesQuotes()
     {
-        File.WriteAllText(Path.Combine(_testDir, "test.txt"), "Hallo");
-        var command = new DirCommand(_outputWriter);
-        var context = new CommandContext("dir", new[] { $"\"{_testDir}\"" });
-        command.Execute(context);
+        _fileSystem.CreateDirectory("docs");
 
-        StringAssert.Contains(_outputWriter.OutputBuffer, $" Verzeichnis von {_testDir}");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
+        Run("\"docs\"");
+
+        StringAssert.Contains(_outputWriter.OutputBuffer, @" Directory of C:\docs");
+    }
+
+    [TestMethod]
+    public void Execute_FoldersAreListedBeforeFiles()
+    {
+        AddFile(_context.CurrentFolder, "a.txt", "x");
+        _fileSystem.CreateDirectory("zeta");
+
+        Run();
+
+        int folderIndex = _outputWriter.OutputBuffer.IndexOf("zeta", StringComparison.Ordinal);
+        int fileIndex = _outputWriter.OutputBuffer.IndexOf("a.txt", StringComparison.Ordinal);
+        Assert.IsTrue(folderIndex < fileIndex);
+    }
+
+    [TestMethod]
+    public void Execute_DoesNotReadTheRealDisk()
+    {
+        string realFolder = Path.Combine(Directory.GetCurrentDirectory(), "commanderd-real-" + Guid.NewGuid());
+
+        try
+        {
+            Directory.CreateDirectory(realFolder);
+
+            Run();
+
+            Assert.IsFalse(_outputWriter.OutputBuffer.Contains(Path.GetFileName(realFolder)));
+        }
+        finally
+        {
+            Directory.Delete(realFolder, true);
+        }
     }
 
     [TestMethod]
@@ -153,15 +178,11 @@ public class DirCommandTests
     {
         // useUserOverride: false, damit eigene Windows-Einstellungen den Test nicht beeinflussen
         CultureInfo.CurrentCulture = new CultureInfo(culture, false);
-        string file = Path.Combine(_testDir, "test.txt");
-        File.WriteAllText(file, "Hallo");
-        File.SetLastWriteTime(file, new DateTime(2026, 10, 29, 14, 10, 0));
-        Directory.CreateDirectory(Path.Combine(_testDir, "Unterordner"));
-        Directory.SetLastWriteTime(Path.Combine(_testDir, "Unterordner"), new DateTime(2026, 10, 29, 14, 10, 0));
+        var date = new DateTime(2026, 10, 29, 14, 10, 0);
+        _context.CurrentFolder.AddChildItem(new FsFile("test.txt", @"C:\test.txt") { Content = "Hallo", CreatedOn = date });
+        _context.CurrentFolder.AddChildItem(new Folder("Unterordner", @"C:\Unterordner") { CreatedOn = date });
 
-        var command = new DirCommand(_outputWriter);
-        var context = new CommandContext("dir", new[] { _testDir });
-        command.Execute(context);
+        Run();
 
         string output = _outputWriter.OutputBuffer.Replace('\u202f', ' ');
 
@@ -170,28 +191,17 @@ public class DirCommandTests
     }
 
     [TestMethod]
-    public void Execute_OutputEnds_ShowsFileAndDirectoryCountAndFreeBytes()
+    public void Execute_OutputEnds_ShowsFileAndDirectoryCount()
     {
-        File.WriteAllText(Path.Combine(_testDir, "a.txt"), "Hallo");
-        File.WriteAllText(Path.Combine(_testDir, "b.txt"), "Hallo");
-        Directory.CreateDirectory(Path.Combine(_testDir, "Unterordner"));
-        var command = new DirCommand(_outputWriter);
-        var context = new CommandContext("dir", new[] { _testDir });
-        command.Execute(context);
+        AddFile(_context.CurrentFolder, "a.txt", "Hallo");
+        AddFile(_context.CurrentFolder, "b.txt", "Hallo");
+        _fileSystem.CreateDirectory("Unterordner");
+
+        Run();
 
         string[] lines = _outputWriter.OutputBuffer.TrimEnd().Split(Environment.NewLine);
-        string fileLine = lines[^2];
-        string dirLine = lines[^1];
 
-        Assert.AreEqual($"{2,16} Datei(en) {10,14:N0} Bytes", fileLine);
-        StringAssert.StartsWith(dirLine, $"{1,16} Verzeichnis(se), ");
-        StringAssert.EndsWith(dirLine, " Bytes frei");
-
-        // Freier Speicher kann sich während dem Test leicht ändern, darum mit Toleranz vergleichen
-        string number = dirLine.Substring($"{1,16} Verzeichnis(se), ".Length).Replace(" Bytes frei", "").Trim();
-        long freeBytes = long.Parse(number, NumberStyles.AllowThousands, CultureInfo.CurrentCulture);
-        long expectedFree = new DriveInfo(Path.GetPathRoot(_testDir)!).AvailableFreeSpace;
-        Assert.IsTrue(Math.Abs(expectedFree - freeBytes) < 100_000_000,
-            $"Erwartet ca. {expectedFree:N0} Bytes frei, war {freeBytes:N0}");
+        Assert.AreEqual($"{2,16} File(s) {10,14:N0} bytes", lines[^2]);
+        Assert.AreEqual($"{1,16} Dir(s)", lines[^1]);
     }
 }

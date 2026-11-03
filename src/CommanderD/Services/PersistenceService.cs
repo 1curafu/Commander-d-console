@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using CommanderD.Filesystem;
 
 namespace CommanderD.Services;

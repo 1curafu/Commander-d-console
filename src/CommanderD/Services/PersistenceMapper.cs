@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using CommanderD.Filesystem;
 using FsFile = CommanderD.Filesystem.File;
 
@@ -52,7 +52,7 @@ public static class PersistenceMapper
                     Name = GetName(file),
                     Path = GetPath(file),
                     CreatedOn = GetCreatedOn(file),
-                    Content = GetContent(file),
+                    Content = file.Content,
                 };
 
             default:
@@ -78,7 +78,7 @@ public static class PersistenceMapper
             case FileData fileData:
                 var file = new FsFile(fileData.Name, fileData.Path);
                 SetCreatedOn(file, fileData.CreatedOn);
-                SetContent(file, fileData.Content);
+                file.Content = fileData.Content;
                 return file;
 
             default:
@@ -93,10 +93,6 @@ public static class PersistenceMapper
     private static DateTime GetCreatedOn(FileSystemItem item) => (DateTime)Read(typeof(FileSystemItem), "CreatedOn", item)!;
 
     private static void SetCreatedOn(FileSystemItem item, DateTime value) => Write(typeof(FileSystemItem), "CreatedOn", item, value);
-
-    private static string? GetContent(FsFile file) => (string?)Read(typeof(FsFile), "_content", file);
-
-    private static void SetContent(FsFile file, string? value) => Write(typeof(FsFile), "_content", file, value);
 
     private static object? Read(Type type, string propertyName, object target)
     {
