@@ -28,4 +28,28 @@ public class FileSystemService : IFileSystemService
     {
         Directory.CreateDirectory(path);
     }
+
+    public void DeleteFile(string path)
+    {
+        File.Delete(path);
+    }
+
+    public bool IsProtectedFile(string path)
+    {
+        if ((File.GetAttributes(path) & FileAttributes.System) != 0)
+        {
+            return true;
+        }
+
+        string windowsFolder = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+
+        return windowsFolder.Length > 0 && IsInside(path, windowsFolder);
+    }
+
+    private static bool IsInside(string path, string folder)
+    {
+        string prefix = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder)) + Path.DirectorySeparatorChar;
+
+        return Path.GetFullPath(path).StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+    }
 }

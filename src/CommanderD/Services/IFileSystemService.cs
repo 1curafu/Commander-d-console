@@ -13,4 +13,8 @@ public interface IFileSystemService
     void ChangeDirectory(string path);
 
     void CreateDirectory(string path);
+
+    void DeleteFile(string path);
+
+    bool IsProtectedFile(string path);
 }
