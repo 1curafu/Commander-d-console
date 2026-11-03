@@ -8,7 +8,7 @@ namespace CommanderD.Tests.Shell;
 [TestClass]
 public class PromptTests
 {
-    private static string RunShell(string input, FakeFileSystemService fileSystem, CommandFactory factory)
+    private static string RunShell(string input, CommanderD.Services.IFileSystemService fileSystem, CommandFactory factory)
     {
         var originalIn = Console.In;
         var originalOut = Console.Out;
@@ -78,5 +78,27 @@ public class PromptTests
         string output = RunShell("exit\n\n\n", fileSystem, new CommandFactory());
 
         Assert.AreEqual(@"C:\Users\Name>", output);
+    }
+
+    [TestMethod]
+    public void Prompt_WithVirtualFileSystem_StartsAtRootOfDriveC()
+    {
+        var fileSystem = new CommanderD.Services.FileSystemService(
+            new CommanderD.Filesystem.ShellContext(new CommanderD.Services.PersistenceService()));
+
+        string output = RunShell("", fileSystem, new CommandFactory(fileSystem, new FakeConsoleService()));
+
+        Assert.AreEqual(@"C:\>", output);
+    }
+
+    [TestMethod]
+    public void Prompt_AfterMkdirAndCd_ShowsVirtualPath()
+    {
+        var fileSystem = new CommanderD.Services.FileSystemService(
+            new CommanderD.Filesystem.ShellContext(new CommanderD.Services.PersistenceService()));
+
+        string output = RunShell("mkdir docs\ncd docs\ncd ..\n", fileSystem, new CommandFactory(fileSystem, new FakeConsoleService()));
+
+        Assert.AreEqual(@"C:\>C:\>C:\docs>C:\>", output);
     }
 }

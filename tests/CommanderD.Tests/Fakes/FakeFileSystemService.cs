@@ -75,4 +75,14 @@ public class FakeFileSystemService : IFileSystemService
 
         directories.Add(path);
     }
+
+    public IReadOnlyList<DirectoryEntry> GetEntries(string path)
+    {
+        if (!directories.Contains(path))
+        {
+            throw new DirectoryNotFoundException(path);
+        }
+
+        return new List<DirectoryEntry>();
+    }
 }

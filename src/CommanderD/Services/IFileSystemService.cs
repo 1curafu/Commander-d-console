@@ -13,4 +13,6 @@ public interface IFileSystemService
     void ChangeDirectory(string path);
 
     void CreateDirectory(string path);
+
+    IReadOnlyList<DirectoryEntry> GetEntries(string path);
 }

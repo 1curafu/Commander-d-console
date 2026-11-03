@@ -1,3 +1,4 @@
+using CommanderD.Filesystem;
 using CommanderD.Services;
 using CommanderD.Shell;
 
@@ -5,17 +6,26 @@ namespace CommanderD.Commands;
 
 public class CommandFactory
 {
-    private readonly Dictionary<string, Func<IOutputWriter, Command>> commands =
-        new(StringComparer.OrdinalIgnoreCase)
+    private readonly Dictionary<string, Func<IOutputWriter, Command>> commands;
+
+    public CommandFactory()
+        : this(new FileSystemService(new ShellContext(new PersistenceService())), new ConsoleService())
+    {
+    }
+
+    public CommandFactory(IFileSystemService fileSystemService, IConsoleService consoleService)
+    {
+        commands = new Dictionary<string, Func<IOutputWriter, Command>>(StringComparer.OrdinalIgnoreCase)
         {
-            { "exit", (IOutputWriter outputWriter) => new ExitCommand(outputWriter) },
-            { "cd", (IOutputWriter outputWriter) => new CdCommand(new FileSystemService(), outputWriter) },
-            { "ver", (IOutputWriter outputWriter) => new VersionCommand(outputWriter) },
-            { "mkdir", (IOutputWriter outputWriter) => new MkDirCommand(new FileSystemService(), outputWriter) },
-            { "md", (IOutputWriter outputWriter) => new MkDirCommand(new FileSystemService(), outputWriter) },
-            { "dir", (IOutputWriter outputWriter) => new DirCommand(outputWriter) },
-            { "color", (IOutputWriter outputWriter) => new SetColorCommand(new ConsoleService(), outputWriter) },
+            { "exit", outputWriter => new ExitCommand(outputWriter) },
+            { "cd", outputWriter => new CdCommand(fileSystemService, outputWriter) },
+            { "ver", outputWriter => new VersionCommand(outputWriter) },
+            { "mkdir", outputWriter => new MkDirCommand(fileSystemService, outputWriter) },
+            { "md", outputWriter => new MkDirCommand(fileSystemService, outputWriter) },
+            { "dir", outputWriter => new DirCommand(fileSystemService, outputWriter) },
+            { "color", outputWriter => new SetColorCommand(consoleService, outputWriter) },
         };
+    }
 
     public Command? Create(string name, IOutputWriter outputWriter)
     {

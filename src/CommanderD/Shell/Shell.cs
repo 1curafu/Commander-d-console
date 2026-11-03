@@ -1,4 +1,5 @@
 using CommanderD.Commands;
+using CommanderD.Filesystem;
 using CommanderD.Services;
 
 namespace CommanderD.Shell;
@@ -10,12 +11,17 @@ public class Shell
     private bool _running;
 
     public Shell()
-        : this(new CommandInvoker(new ConsoleOutputWriter()), new FileSystemService())
+        : this(CreateDefault())
     {
     }
 
     public Shell(CommandInvoker commandInvoker)
-        : this(commandInvoker, new FileSystemService())
+        : this(commandInvoker, new FileSystemService(new ShellContext(new PersistenceService())))
+    {
+    }
+
+    private Shell((CommandInvoker Invoker, IFileSystemService FileSystem) setup)
+        : this(setup.Invoker, setup.FileSystem)
     {
     }
 
@@ -23,6 +29,19 @@ public class Shell
     {
         this._commandInvoker = commandInvoker;
         this._fileSystemService = fileSystemService;
+    }
+
+    private static (CommandInvoker, IFileSystemService) CreateDefault()
+    {
+        var outputWriter = new ConsoleOutputWriter();
+        var context = new ShellContext(new PersistenceService());
+
+        context.Load();
+
+        var fileSystem = new FileSystemService(context, saveOnChange: true);
+        var factory = new CommandFactory(fileSystem, new ConsoleService());
+
+        return (new CommandInvoker(new Parser(), factory, outputWriter), fileSystem);
     }
 
     public void Run()
