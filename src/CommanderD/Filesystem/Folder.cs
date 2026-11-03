@@ -1,20 +1,20 @@
 namespace CommanderD.Filesystem;
 
-public class Folder(string name, string path, DateTime createdOn) : FileSystemItem(name, path, createdOn)
+public class Folder(string name, string path) : FileSystemItem(name, path)
 {
-    private readonly List<FileSystemItem> ChildItems = new();
+    private readonly List<FileSystemItem> _childItems = new();
 
     public void AddChildItem(FileSystemItem item)
     {
-        ChildItems.Add(item);
+        _childItems.Add(item);
     }
     public void RemoveChildItem(FileSystemItem item)
     {
-        ChildItems.Remove(item);
+        _childItems.Remove(item);
     }
     public List<FileSystemItem> GetChildItems()
     {
-        return ChildItems;
+        return _childItems;
     }
     
 }
