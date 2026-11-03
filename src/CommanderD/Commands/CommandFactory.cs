@@ -23,6 +23,7 @@ public class CommandFactory
             { "mkdir", outputWriter => new MkDirCommand(fileSystemService, outputWriter) },
             { "md", outputWriter => new MkDirCommand(fileSystemService, outputWriter) },
             { "dir", outputWriter => new DirCommand(fileSystemService, outputWriter) },
+            { "del", outputWriter => new DelCommand(fileSystemService, outputWriter) },
             { "color", outputWriter => new SetColorCommand(consoleService, outputWriter) },
         };
     }

@@ -251,4 +251,46 @@ public class FileSystemServiceTests
 
         Assert.IsTrue(restarted.DirectoryExists(@"C:\docs\work"));
     }
+
+    [TestMethod]
+    public void DeleteFile_ExistingFile_RemovesItFromTheFolder()
+    {
+        _service.CreateDirectory("docs");
+        var docs = (Folder)_context.CurrentFolder.GetChildItems()[0];
+        docs.AddChildItem(new FsFile("a.txt", @"C:\docs\a.txt"));
+
+        _service.DeleteFile(@"docs\a.txt");
+
+        Assert.IsFalse(_service.FileExists(@"C:\docs\a.txt"));
+        Assert.IsTrue(_service.DirectoryExists(@"C:\docs"));
+    }
+
+    [TestMethod]
+    public void DeleteFile_MissingFileOrFolder_Throws()
+    {
+        _service.CreateDirectory("docs");
+
+        Assert.ThrowsExactly<FileNotFoundException>(() => _service.DeleteFile("gibtsnicht.txt"));
+        Assert.ThrowsExactly<FileNotFoundException>(() => _service.DeleteFile("docs"));
+    }
+
+    [TestMethod]
+    public void DeleteFile_WithSaveOnChange_SavesTheJsonFile()
+    {
+        var service = new FileSystemService(_context, saveOnChange: true);
+        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
+
+        service.DeleteFile("a.txt");
+
+        Assert.IsTrue(System.IO.File.Exists(_jsonPath));
+        Assert.IsFalse(System.IO.File.ReadAllText(_jsonPath).Contains("a.txt"));
+    }
+
+    [TestMethod]
+    public void IsProtectedFile_VirtualFile_IsNotProtected()
+    {
+        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
+
+        Assert.IsFalse(_service.IsProtectedFile("a.txt"));
+    }
 }

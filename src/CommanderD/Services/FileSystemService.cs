@@ -136,6 +136,29 @@ public class FileSystemService : IFileSystemService
         }
     }
 
+    public void DeleteFile(string path)
+    {
+        (string driveName, List<string> segments) = Split(ResolvePath(path));
+
+        if (segments.Count == 0 || Locate(path)?.Item is not FsFile file)
+        {
+            throw new FileNotFoundException($"The file '{path}' does not exist.");
+        }
+
+        var parent = (Folder)Locate(Build(driveName, segments.GetRange(0, segments.Count - 1)))!.Item;
+        parent.RemoveChildItem(file);
+
+        if (_saveOnChange)
+        {
+            _context.Save();
+        }
+    }
+
+    public bool IsProtectedFile(string path)
+    {
+        return false;
+    }
+
     public IReadOnlyList<DirectoryEntry> GetEntries(string path)
     {
         Located? located = Locate(path);
