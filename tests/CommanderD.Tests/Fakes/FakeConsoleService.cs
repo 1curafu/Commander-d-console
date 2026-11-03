@@ -12,6 +12,8 @@ public class FakeConsoleService : IConsoleService
 
     public int ResetColorsCalls { get; private set; }
 
+    public int ClearCalls { get; private set; }
+
     public void SetColors(ConsoleColor background, ConsoleColor foreground)
     {
         SetColorsCalls++;
@@ -24,5 +26,10 @@ public class FakeConsoleService : IConsoleService
         ResetColorsCalls++;
         BackgroundColor = ConsoleColor.Black;
         ForegroundColor = ConsoleColor.Gray;
+    }
+
+    public void Clear()
+    {
+        ClearCalls++;
     }
 }

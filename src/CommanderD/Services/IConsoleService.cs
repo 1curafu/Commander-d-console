@@ -9,4 +9,6 @@ public interface IConsoleService
     void SetColors(ConsoleColor background, ConsoleColor foreground);
 
     void ResetColors();
+
+    void Clear();
 }

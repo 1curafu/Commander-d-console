@@ -1,16 +1,13 @@
+using CommanderD.Services;
+using CommanderD.Shell;
+
 namespace CommanderD.Commands;
 
-public class ClsCommand : AbstractCommand
+public class ClsCommand(IConsoleService consoleService, IOutputWriter outputWriter)
+    : Command("cls", "Clears the screen.", outputWriter)
 {
-    public ClsCommand()
-        : base("cls", "clears the console")
+    public override void Execute(CommandContext context)
     {
-        
-    }
-
-    public override CommandResult Execute(CommandContext context)
-    {
-        Console.Clear();
-        return CommandResult.Ok();
+        consoleService.Clear();
     }
 }
