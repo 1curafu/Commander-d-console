@@ -16,6 +16,7 @@ public class CommandFactory
             { "dir", (IOutputWriter outputWriter) => new DirCommand(outputWriter) },
             { "del", (IOutputWriter outputWriter) => new DelCommand(new FileSystemService(), outputWriter) },
             { "color", (IOutputWriter outputWriter) => new SetColorCommand(new ConsoleService(), outputWriter) },
+            { "cls", (IOutputWriter outputWriter) => new ClsCommand(new ConsoleService(), outputWriter) },
         };
 
     public Command? Create(string name, IOutputWriter outputWriter)
