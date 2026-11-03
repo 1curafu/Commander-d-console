@@ -19,4 +19,9 @@ public class ConsoleService : IConsoleService
         Console.ResetColor();
         Console.Clear();
     }
+
+    public void Clear()
+    {
+        Console.Clear();
+    }
 }
