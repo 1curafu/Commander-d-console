@@ -293,4 +293,113 @@ public class FileSystemServiceTests
 
         Assert.IsFalse(_service.IsProtectedFile("a.txt"));
     }
+
+    [TestMethod]
+    public void Rename_ExistingFile_GetsNewNameAndPath()
+    {
+        var file = new FsFile("a.txt", @"C:\a.txt");
+        _context.CurrentFolder.AddChildItem(file);
+
+        _service.Rename("a.txt", "b.txt");
+
+        Assert.IsFalse(_service.FileExists(@"C:\a.txt"));
+        Assert.IsTrue(_service.FileExists(@"C:\b.txt"));
+        Assert.AreEqual("b.txt", file.Name);
+        Assert.AreEqual(@"C:\b.txt", file.Path);
+    }
+
+    [TestMethod]
+    public void Rename_ExistingDirectory_UpdatesPathsOfChildren()
+    {
+        _service.CreateDirectory(@"docs\sub");
+        var docs = (Folder)_context.CurrentFolder.GetChildItems()[0];
+        var sub = (Folder)docs.GetChildItems()[0];
+        var file = new FsFile("a.txt", @"C:\docs\sub\a.txt");
+        sub.AddChildItem(file);
+
+        _service.Rename("docs", "papers");
+
+        Assert.IsTrue(_service.DirectoryExists(@"C:\papers\sub"));
+        Assert.IsTrue(_service.FileExists(@"C:\papers\sub\a.txt"));
+        Assert.IsFalse(_service.DirectoryExists(@"C:\docs"));
+        Assert.AreEqual(@"C:\papers\sub\a.txt", file.Path);
+    }
+
+    [TestMethod]
+    public void Rename_OnlyChangesCase_Works()
+    {
+        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
+
+        _service.Rename("a.txt", "A.txt");
+
+        Assert.AreEqual("A.txt", _context.CurrentFolder.GetChildItems()[0].Name);
+    }
+
+    [TestMethod]
+    public void Rename_MissingItem_ThrowsFileNotFoundException()
+    {
+        Assert.ThrowsExactly<FileNotFoundException>(() => _service.Rename("gibtsnicht.txt", "b.txt"));
+    }
+
+    [TestMethod]
+    public void Rename_NewNameAlreadyExists_ThrowsIOException()
+    {
+        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
+        _context.CurrentFolder.AddChildItem(new FsFile("b.txt", @"C:\b.txt"));
+
+        Assert.ThrowsExactly<IOException>(() => _service.Rename("a.txt", "B.TXT"));
+        Assert.IsTrue(_service.FileExists(@"C:\a.txt"));
+    }
+
+    [TestMethod]
+    public void Rename_InvalidNewName_ThrowsArgumentException()
+    {
+        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
+
+        Assert.ThrowsExactly<ArgumentException>(() => _service.Rename("a.txt", @"sub\b.txt"));
+        Assert.ThrowsExactly<ArgumentException>(() => _service.Rename("a.txt", "b|c.txt"));
+        Assert.ThrowsExactly<ArgumentException>(() => _service.Rename("a.txt", ".."));
+    }
+
+    [TestMethod]
+    public void Rename_RootOfDrive_ThrowsFileNotFoundException()
+    {
+        Assert.ThrowsExactly<FileNotFoundException>(() => _service.Rename(@"C:\", "D"));
+    }
+
+    [TestMethod]
+    public void Rename_CurrentDirectory_IsDenied()
+    {
+        _service.CreateDirectory(@"docs\sub");
+        _service.ChangeDirectory(@"docs\sub");
+
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() => _service.Rename(@"C:\docs\sub", "other"));
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() => _service.Rename(@"C:\docs", "other"));
+        Assert.IsTrue(_service.DirectoryExists(@"C:\docs\sub"));
+    }
+
+    [TestMethod]
+    public void Rename_SiblingOfCurrentDirectory_Works()
+    {
+        _service.CreateDirectory(@"docs\sub");
+        _service.CreateDirectory(@"docs\other");
+        _service.ChangeDirectory(@"docs\sub");
+
+        _service.Rename(@"C:\docs\other", "renamed");
+
+        Assert.IsTrue(_service.DirectoryExists(@"C:\docs\renamed"));
+    }
+
+    [TestMethod]
+    public void Rename_WithSaveOnChange_SavesTheJsonFile()
+    {
+        var service = new FileSystemService(_context, saveOnChange: true);
+        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
+
+        service.Rename("a.txt", "b.txt");
+
+        string json = System.IO.File.ReadAllText(_jsonPath);
+        Assert.IsTrue(json.Contains("b.txt"));
+        Assert.IsFalse(json.Contains("a.txt"));
+    }
 }
