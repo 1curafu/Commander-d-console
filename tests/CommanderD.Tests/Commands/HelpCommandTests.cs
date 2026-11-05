@@ -189,4 +189,18 @@ public class HelpCommandTests
             StringAssert.Contains(_outputWriter.OutputBuffer, name);
         }
     }
+
+    [TestMethod]
+    [DataRow("type", "TYPE <file>")]
+    [DataRow("ren", "REN <name> <new name>")]
+    [DataRow("rename", "REN <name> <new name>")]
+    [DataRow("more", "MORE <file>")]
+    public void Help_WithFileCommands_ShowsDescriptionAndUsage(string name, string usage)
+    {
+        Run(name);
+
+        Command command = _factory.Create(name, _outputWriter)!;
+        StringAssert.Contains(_outputWriter.OutputBuffer, command.Description);
+        StringAssert.Contains(_outputWriter.OutputBuffer, usage);
+    }
 }

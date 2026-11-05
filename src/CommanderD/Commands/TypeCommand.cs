@@ -8,6 +8,8 @@ public class TypeCommand(IFileSystemService fileSystemService, IOutputWriter out
     private const string SyntaxErrorMessage = "The syntax of the command is incorrect.\n";
     private const string FileNotFoundMessage = "The system cannot find the file specified.\n";
     
+    public override string Usage => "TYPE <file>";
+
     public override void Execute(CommandContext context)
     {
         if (context.Arguments.Length != 1)

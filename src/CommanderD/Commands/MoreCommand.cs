@@ -30,6 +30,8 @@ public class MoreCommand : Command
         _readKey = readKey;
     }
 
+    public override string Usage => "MORE <file>";
+
     public override void Execute(CommandContext context)
     {
         string name = string.Join(" ", context.Arguments).Trim('"');
