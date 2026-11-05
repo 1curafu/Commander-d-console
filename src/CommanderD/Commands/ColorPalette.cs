@@ -1,4 +1,4 @@
-﻿namespace CommanderD.Commands;
+namespace CommanderD.Commands;
 
 
 public static class ColorPalette
@@ -25,6 +25,11 @@ public static class ColorPalette
             { "magenta", ConsoleColor.Magenta },
             { "darkmagenta", ConsoleColor.DarkMagenta },
         };
+
+    public static IReadOnlyList<string> Names { get; } = Colors
+        .Where(color => string.Equals(color.Key, color.Value.ToString(), StringComparison.OrdinalIgnoreCase))
+        .Select(color => color.Key)
+        .ToList();
 
     public static bool TryGet(string name, out ConsoleColor color)
     {

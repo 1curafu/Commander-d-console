@@ -7,6 +7,8 @@ public abstract class Command
 {
     public string Name { get; }
     public string Description { get; }
+
+    public virtual string Usage => Name.ToUpperInvariant();
     
     public IOutputWriter OutputWriter { get; }
 

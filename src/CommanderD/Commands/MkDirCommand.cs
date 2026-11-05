@@ -18,6 +18,8 @@ public class MkDirCommand : Command
         _outputWriter = outputWriter;
     }
 
+    public override string Usage => "MKDIR <name>\nMD <name>";
+
     public override void Execute(CommandContext context)
     {
         if (context.Arguments.Length == 0)

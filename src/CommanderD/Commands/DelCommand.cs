@@ -1,4 +1,4 @@
-﻿using CommanderD.Services;
+using CommanderD.Services;
 using CommanderD.Shell;
 
 namespace CommanderD.Commands;
@@ -18,6 +18,8 @@ public class DelCommand : Command
         _fileSystemService = fileSystemService;
         _outputWriter = outputWriter;
     }
+
+    public override string Usage => "DEL <file>";
 
     public override void Execute(CommandContext context)
     {

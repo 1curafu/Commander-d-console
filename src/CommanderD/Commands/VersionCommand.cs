@@ -6,7 +6,7 @@ public class VersionCommand : Command
 {
 
     public VersionCommand(IOutputWriter outputWriter)
-        :base("ver", "outputs the current OS version", outputWriter)
+        :base("ver", "Shows the version number.", outputWriter)
     {
         
     }

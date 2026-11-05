@@ -7,7 +7,7 @@ public class ExitCommand : Command
     public bool ShouldExit { get; private set; }
 
     public ExitCommand(IOutputWriter outputWriter)
-        : base("exit", "exits the shell", outputWriter)
+        : base("exit", "Closes the shell.", outputWriter)
     {
     }
 
