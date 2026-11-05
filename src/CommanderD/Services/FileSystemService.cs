@@ -3,10 +3,6 @@ using FsFile = CommanderD.Filesystem.File;
 
 namespace CommanderD.Services;
 
-/// <summary>
-/// The file system of the shell (implements <see cref="IFileSystemService"/>). It only works on the virtual drives of the <see cref="ShellContext"/>
-/// and never touches the real disk. Paths look like in the Windows command prompt: <c>C:\docs</c>.
-/// </summary>
 public class FileSystemService : IFileSystemService
 {
     private static readonly char[] InvalidNameCharacters = ['<', '>', ':', '"', '/', '\\', '|', '?', '*'];

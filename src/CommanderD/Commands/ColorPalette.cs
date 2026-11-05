@@ -26,7 +26,6 @@ public static class ColorPalette
             { "darkmagenta", ConsoleColor.DarkMagenta },
         };
 
-    /// <summary>The names that can be used, without the aliases (e.g. "grey" for "gray").</summary>
     public static IReadOnlyList<string> Names { get; } = Colors
         .Where(color => string.Equals(color.Key, color.Value.ToString(), StringComparison.OrdinalIgnoreCase))
         .Select(color => color.Key)
