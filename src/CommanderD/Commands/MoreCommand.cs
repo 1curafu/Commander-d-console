@@ -3,10 +3,7 @@ using CommanderD.Shell;
 
 namespace CommanderD.Commands;
 
-/// <summary>
-/// Shows a file one screen at a time, like MORE in the Windows command prompt.
-/// Space = next page, Enter = next line, Q or Ctrl+C = quit.
-/// </summary>
+
 public class MoreCommand : Command
 {
     private const string SyntaxErrorMessage = "The syntax of the command is incorrect.";
@@ -22,10 +19,7 @@ public class MoreCommand : Command
     {
     }
 
-    /// <summary>
-    /// Lets tests replace the terminal: <paramref name="windowHeight"/> returns the number of visible rows,
-    /// <paramref name="readKey"/> returns the next key the user presses.
-    /// </summary>
+    
     public MoreCommand(IFileSystemService fileSystemService, IOutputWriter outputWriter,
         Func<int> windowHeight, Func<ConsoleKeyInfo> readKey)
         : base("more", "Displays output one screen at a time.", outputWriter)
@@ -69,8 +63,7 @@ public class MoreCommand : Command
         ShowPaged(SplitLines(content));
     }
 
-    /// <summary>Returns the content of the file, or null if it does not exist or cannot be read.</summary>
-    private string? ReadContent(string target)
+      private string? ReadContent(string target)
     {
         if (!_fileSystemService.FileExists(target))
         {
@@ -79,7 +72,7 @@ public class MoreCommand : Command
 
         try
         {
-            // For a file, GetEntries returns exactly one entry: the file itself.
+           
             IReadOnlyList<DirectoryEntry> entries = _fileSystemService.GetEntries(target);
             return entries.Count == 1 ? entries[0].Content ?? string.Empty : null;
         }
@@ -91,7 +84,7 @@ public class MoreCommand : Command
 
     private void ShowPaged(string[] lines)
     {
-        // One row is kept free for the status indicator.
+      
         int pageSize = Math.Max(1, _windowHeight() - 1);
         int shown = ShowLines(lines, 0, pageSize);
 
@@ -102,7 +95,7 @@ public class MoreCommand : Command
 
             ConsoleKeyInfo key = _readKey();
 
-            // Remove the status indicator before printing further lines.
+          
             _outputWriter.Write("\r" + new string(' ', status.Length) + "\r");
 
             if (IsQuit(key))
@@ -148,7 +141,7 @@ public class MoreCommand : Command
 
         string[] lines = content.Replace("\r\n", "\n").Split('\n');
 
-        // A trailing newline does not start an extra (empty) line.
+      
         return lines[^1].Length == 0 ? lines[..^1] : lines;
     }
 
@@ -160,7 +153,7 @@ public class MoreCommand : Command
         }
         catch (IOException)
         {
-            // No real console window (e.g. output is redirected).
+           
             return DefaultWindowHeight;
         }
     }
@@ -169,11 +162,11 @@ public class MoreCommand : Command
     {
         if (Console.IsInputRedirected)
         {
-            // No keyboard available: behave as if Space was pressed so the whole file is shown.
+            
             return new ConsoleKeyInfo(' ', ConsoleKey.Spacebar, false, false, false);
         }
 
-        // Without this, Ctrl+C would end the whole shell instead of only MORE.
+        
         bool previous = Console.TreatControlCAsInput;
         Console.TreatControlCAsInput = true;
 
