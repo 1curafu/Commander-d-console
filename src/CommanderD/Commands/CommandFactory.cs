@@ -26,7 +26,7 @@ public class CommandFactory
             { "del", outputWriter => new DelCommand(fileSystemService, outputWriter) },
             { "color", outputWriter => new SetColorCommand(consoleService, outputWriter) },
             { "cls", outputWriter => new ClsCommand(consoleService, outputWriter) },
-            { "more", outputWriter => new MoreCommand(fileSystemService, outputWriter) },
+            { "more", outputWriter => new MoreCommand(fileSystemService, consoleService, outputWriter) },
         };
     }
 

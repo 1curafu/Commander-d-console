@@ -12,19 +12,39 @@ public class MoreCommandTests
 
     private readonly string _work = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "commanderd-more-tests", "work"));
     private readonly FakeFileSystemService _fileSystem;
+    private readonly FakeConsoleService _console;
     private readonly TestOutputWriter _outputWriter;
     private readonly MoreCommand _command;
+
+    private static readonly ConsoleKeyInfo Space = new(' ', ConsoleKey.Spacebar, false, false, false);
+    private static readonly ConsoleKeyInfo Enter = new('\r', ConsoleKey.Enter, false, false, false);
+    private static readonly ConsoleKeyInfo Q = new('q', ConsoleKey.Q, false, false, false);
+    private static readonly ConsoleKeyInfo CtrlC = new('\u0003', ConsoleKey.C, false, false, true);
+    private static readonly ConsoleKeyInfo X = new('x', ConsoleKey.X, false, false, false);
 
     public MoreCommandTests()
     {
         _fileSystem = new FakeFileSystemService(_work);
+        _console = new FakeConsoleService();
         _outputWriter = new TestOutputWriter();
-        _command = new MoreCommand(_fileSystem, _outputWriter);
+        _command = new MoreCommand(_fileSystem, _console, _outputWriter);
     }
 
     private void Run(params string[] arguments)
     {
         _command.Execute(new CommandContext("more", arguments));
+    }
+
+    /// <summary>Creates long.txt with lines "Zeile 01" ... "Zeile NN".</summary>
+    private void AddLongFile(int lineCount)
+    {
+        string content = string.Join("\n", Enumerable.Range(1, lineCount).Select(i => $"Zeile {i:D2}"));
+        _fileSystem.AddFile(Path.Combine(_work, "long.txt"), content);
+    }
+
+    private bool WasShown(int lineNumber)
+    {
+        return _outputWriter.OutputBuffer.Contains($"Zeile {lineNumber:D2}" + Environment.NewLine);
     }
 
     [TestMethod]
@@ -119,5 +139,156 @@ public class MoreCommandTests
         Run("x");
 
         Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
+    }
+
+    [TestMethod]
+    public void More_LongFile_ShowsOnlyFirstPage()
+    {
+        _console.WindowHeight = 4;
+        AddLongFile(10);
+
+        Run("long.txt");
+
+        Assert.IsTrue(WasShown(1));
+        Assert.IsTrue(WasShown(3));
+        Assert.IsFalse(WasShown(4));
+    }
+
+    [TestMethod]
+    public void More_LongFile_FirstPageFillsWindowHeightMinusStatusRow()
+    {
+        _console.WindowHeight = 6;
+        AddLongFile(20);
+
+        Run("long.txt");
+
+        Assert.IsTrue(WasShown(5));
+        Assert.IsFalse(WasShown(6));
+    }
+
+    [TestMethod]
+    public void More_LongFile_ShowsStatusWithPercentage()
+    {
+        _console.WindowHeight = 4;
+        AddLongFile(10);
+
+        Run("long.txt");
+
+        StringAssert.Contains(_outputWriter.OutputBuffer, "-- More (30%) --");
+    }
+
+    [TestMethod]
+    public void More_ShortFile_ShowsNoStatusAndWaitsForNoKey()
+    {
+        AddLongFile(5);
+
+        Run("long.txt");
+
+        Assert.IsTrue(WasShown(5));
+        Assert.IsFalse(_outputWriter.OutputBuffer.Contains("-- More"));
+        Assert.AreEqual(0, _console.ReadKeyCalls);
+    }
+
+    [TestMethod]
+    public void More_Space_AdvancesOnePage()
+    {
+        _console.WindowHeight = 4;
+        AddLongFile(10);
+        _console.PressKeys(Space, Q);
+
+        Run("long.txt");
+
+        Assert.IsTrue(WasShown(6));
+        Assert.IsFalse(WasShown(7));
+        StringAssert.Contains(_outputWriter.OutputBuffer, "-- More (60%) --");
+    }
+
+    [TestMethod]
+    public void More_Enter_AdvancesOneLine()
+    {
+        _console.WindowHeight = 4;
+        AddLongFile(10);
+        _console.PressKeys(Enter, Q);
+
+        Run("long.txt");
+
+        Assert.IsTrue(WasShown(4));
+        Assert.IsFalse(WasShown(5));
+        StringAssert.Contains(_outputWriter.OutputBuffer, "-- More (40%) --");
+    }
+
+    [TestMethod]
+    public void More_Q_EndsCommand()
+    {
+        _console.WindowHeight = 4;
+        AddLongFile(10);
+        _console.PressKeys(Q, Space);
+
+        Run("long.txt");
+
+        Assert.IsFalse(WasShown(4));
+        Assert.AreEqual(1, _console.ReadKeyCalls);
+    }
+
+    [TestMethod]
+    public void More_CtrlC_EndsCommand()
+    {
+        _console.WindowHeight = 4;
+        AddLongFile(10);
+        _console.PressKeys(CtrlC, Space);
+
+        Run("long.txt");
+
+        Assert.IsFalse(WasShown(4));
+        Assert.AreEqual(1, _console.ReadKeyCalls);
+    }
+
+    [TestMethod]
+    public void More_OtherKey_IsIgnored()
+    {
+        _console.WindowHeight = 4;
+        AddLongFile(10);
+        _console.PressKeys(X, Q);
+
+        Run("long.txt");
+
+        Assert.IsFalse(WasShown(4));
+        Assert.AreEqual(2, _console.ReadKeyCalls);
+    }
+
+    [TestMethod]
+    public void More_SpaceUntilEnd_ShowsWholeFileAndStops()
+    {
+        _console.WindowHeight = 4;
+        AddLongFile(10);
+        _console.PressKeys(Space, Space, Space);
+
+        Run("long.txt");
+
+        Assert.AreEqual(3, _console.ReadKeyCalls);
+        Assert.IsTrue(_outputWriter.OutputBuffer.EndsWith("Zeile 10" + Environment.NewLine));
+    }
+
+    [TestMethod]
+    public void More_AfterKeyPress_StatusIsErased()
+    {
+        _console.WindowHeight = 4;
+        AddLongFile(10);
+        _console.PressKeys(Enter, Q);
+
+        Run("long.txt");
+
+        string status = "-- More (30%) --";
+        StringAssert.Contains(_outputWriter.OutputBuffer, status + "\r" + new string(' ', status.Length) + "\r" + "Zeile 04");
+    }
+
+    [TestMethod]
+    public void More_TrailingNewline_DoesNotPrintExtraEmptyLine()
+    {
+        _fileSystem.AddFile(Path.Combine(_work, "test.txt"), "a\nb\n");
+
+        Run("test.txt");
+
+        Assert.AreEqual("a" + Environment.NewLine + "b" + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 }
