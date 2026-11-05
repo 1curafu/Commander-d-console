@@ -21,6 +21,8 @@ public class RenCommand : Command
         _outputWriter = outputWriter;
     }
 
+    public override string Usage => "REN <name> <new name>\nRENAME <name> <new name>";
+
     public override void Execute(CommandContext context)
     {
         List<string> names = SplitNames(context.Arguments);
