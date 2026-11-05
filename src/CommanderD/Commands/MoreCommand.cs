@@ -5,7 +5,7 @@ namespace CommanderD.Commands;
 
 public class MoreCommand : Command
 {
-    private const string SyntaxErrorMessage = "The syntax of the Command is incorrect.";
+    private const string SyntaxErrorMessage = "The syntax of the command is incorrect.";
 
     private readonly IFileSystemService _fileSystemService;
     private readonly IOutputWriter _outputWriter;
