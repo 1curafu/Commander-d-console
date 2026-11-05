@@ -28,6 +28,7 @@ public class CommandFactory
             { "cls", outputWriter => new ClsCommand(consoleService, outputWriter) },
             { "ren", outputWriter => new RenCommand(fileSystemService, outputWriter) },
 			{ "rename", outputWriter => new RenCommand(fileSystemService, outputWriter) },
+            { "more", outputWriter => new MoreCommand(fileSystemService, outputWriter) },
         };
     }
 
