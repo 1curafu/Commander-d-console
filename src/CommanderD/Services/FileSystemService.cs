@@ -150,6 +150,48 @@ public class FileSystemService : IFileSystemService
         }
     }
 
+    public void Rename(string path, string newName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(newName);
+
+        if (newName is "." or ".." || newName.IndexOfAny(InvalidNameCharacters) >= 0)
+        {
+            throw new ArgumentException($"The name '{newName}' is not valid.", nameof(newName));
+        }
+
+        (string driveName, List<string> segments) = Split(ResolvePath(path));
+        Located? located = Locate(path);
+
+        if (segments.Count == 0 || located == null)
+        {
+            throw new FileNotFoundException($"The file '{path}' does not exist.");
+        }
+        
+        if (ContainsCurrentDirectory(driveName, segments))
+        {
+            throw new UnauthorizedAccessException($"'{path}' cannot be renamed.");
+        }
+
+        var parent = (Folder)Locate(Build(driveName, segments.GetRange(0, segments.Count - 1)))!.Item;
+        FileSystemItem? existing = FindChild(parent, newName);
+
+        if (existing != null && !ReferenceEquals(existing, located.Item))
+        {
+            throw new IOException($"A duplicate file name exists: '{newName}'.");
+        }
+
+        located.Item.Name = newName;
+
+        List<string> newSegments = segments.GetRange(0, segments.Count - 1);
+        newSegments.Add(newName);
+        UpdatePath(located.Item, Build(driveName, newSegments));
+
+        if (_saveOnChange)
+        {
+            _context.Save();
+        }
+    }
+
     public bool IsProtectedFile(string path)
     {
         return false;
@@ -165,15 +207,15 @@ public class FileSystemService : IFileSystemService
                 IEnumerable<DirectoryEntry> folders = folder.GetChildItems()
                     .OfType<Folder>()
                     .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
-                    .Select(item => new DirectoryEntry(item.Name, true, 0, item.CreatedOn));
+                    .Select(item => new DirectoryEntry(item.Name, true, 0, item.CreatedOn, null));
                 IEnumerable<DirectoryEntry> files = folder.GetChildItems()
                     .OfType<FsFile>()
                     .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
-                    .Select(item => new DirectoryEntry(item.Name, false, item.Size, item.CreatedOn));
+                    .Select(item => new DirectoryEntry(item.Name, false, item.Size, item.CreatedOn, item.Content));
                 return folders.Concat(files).ToList();
 
             case FsFile file:
-                return [new DirectoryEntry(file.Name, false, file.Size, file.CreatedOn)];
+                return [new DirectoryEntry(file.Name, false, file.Size, file.CreatedOn, file.Content)];
 
             default:
                 throw new DirectoryNotFoundException($"The path '{path}' does not exist.");
@@ -213,6 +255,40 @@ public class FileSystemService : IFileSystemService
         }
 
         return new Located(item, drive.Name, canonical);
+    }
+
+    private bool ContainsCurrentDirectory(string driveName, List<string> segments)
+    {
+        if (!string.Equals(driveName, _currentDrive, StringComparison.OrdinalIgnoreCase)
+            || segments.Count > _currentSegments.Count)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < segments.Count; i++)
+        {
+            if (!string.Equals(segments[i], _currentSegments[i], StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static void UpdatePath(FileSystemItem item, string path)
+    {
+        item.Path = path;
+
+        if (item is not Folder folder)
+        {
+            return;
+        }
+
+        foreach (FileSystemItem child in folder.GetChildItems())
+        {
+            UpdatePath(child, path.TrimEnd('\\') + "\\" + child.Name);
+        }
     }
 
     private Drive? FindDrive(string name)
