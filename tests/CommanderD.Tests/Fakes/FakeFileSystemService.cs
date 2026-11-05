@@ -7,6 +7,7 @@ public class FakeFileSystemService : IFileSystemService
     private readonly HashSet<string> directories = new HashSet<string>(StringComparer.Ordinal);
     private readonly HashSet<string> files = new HashSet<string>(StringComparer.Ordinal);
     private readonly HashSet<string> protectedFiles = new HashSet<string>(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> fileContents = new Dictionary<string, string>(StringComparer.Ordinal);
 
     public string CurrentDirectory { get; set; }
 
@@ -37,9 +38,10 @@ public class FakeFileSystemService : IFileSystemService
         directories.Add(path);
     }
 
-    public void AddFile(string path)
+    public void AddFile(string path, string content = "")
     {
         files.Add(path);
+        fileContents[path] = content;
     }
 
     public void AddProtectedFile(string path)
@@ -103,6 +105,16 @@ public class FakeFileSystemService : IFileSystemService
         }
 
         files.Remove(path);
+    }
+
+    public string ReadFile(string path)
+    {
+        if (!files.Contains(path))
+        {
+            throw new FileNotFoundException(path);
+        }
+
+        return fileContents.TryGetValue(path, out string? content) ? content : string.Empty;
     }
 
     public bool IsProtectedFile(string path)

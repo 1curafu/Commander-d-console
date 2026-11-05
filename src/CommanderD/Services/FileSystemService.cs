@@ -154,6 +154,16 @@ public class FileSystemService : IFileSystemService
         }
     }
 
+    public string ReadFile(string path)
+    {
+        if (Locate(path)?.Item is not FsFile file)
+        {
+            throw new FileNotFoundException($"The file '{path}' does not exist.");
+        }
+
+        return file.Content ?? string.Empty;
+    }
+
     public bool IsProtectedFile(string path)
     {
         return false;
