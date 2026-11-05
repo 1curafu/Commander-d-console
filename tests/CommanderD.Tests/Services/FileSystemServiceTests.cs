@@ -275,6 +275,31 @@ public class FileSystemServiceTests
     }
 
     [TestMethod]
+    public void ReadFile_ExistingFile_ReturnsContent()
+    {
+        _context.CurrentFolder.AddChildItem(new FsFile("notes.txt", @"C:\notes.txt") { Content = "hallo" });
+
+        Assert.AreEqual("hallo", _service.ReadFile("notes.txt"));
+    }
+
+    [TestMethod]
+    public void ReadFile_FileWithoutContent_ReturnsEmptyString()
+    {
+        _context.CurrentFolder.AddChildItem(new FsFile("empty.txt", @"C:\empty.txt"));
+
+        Assert.AreEqual(string.Empty, _service.ReadFile("empty.txt"));
+    }
+
+    [TestMethod]
+    public void ReadFile_MissingFileOrFolder_Throws()
+    {
+        _service.CreateDirectory("docs");
+
+        Assert.ThrowsExactly<FileNotFoundException>(() => _service.ReadFile("gibtsnicht.txt"));
+        Assert.ThrowsExactly<FileNotFoundException>(() => _service.ReadFile("docs"));
+    }
+
+    [TestMethod]
     public void DeleteFile_WithSaveOnChange_SavesTheJsonFile()
     {
         var service = new FileSystemService(_context, saveOnChange: true);
