@@ -154,14 +154,46 @@ public class FileSystemService : IFileSystemService
         }
     }
 
-    public string ReadFile(string path)
+    public void Rename(string path, string newName)
     {
-        if (Locate(path)?.Item is not FsFile file)
+        ArgumentException.ThrowIfNullOrWhiteSpace(newName);
+
+        if (newName is "." or ".." || newName.IndexOfAny(InvalidNameCharacters) >= 0)
+        {
+            throw new ArgumentException($"The name '{newName}' is not valid.", nameof(newName));
+        }
+
+        (string driveName, List<string> segments) = Split(ResolvePath(path));
+        Located? located = Locate(path);
+
+        if (segments.Count == 0 || located == null)
         {
             throw new FileNotFoundException($"The file '{path}' does not exist.");
         }
+        
+        if (ContainsCurrentDirectory(driveName, segments))
+        {
+            throw new UnauthorizedAccessException($"'{path}' cannot be renamed.");
+        }
 
-        return file.Content ?? string.Empty;
+        var parent = (Folder)Locate(Build(driveName, segments.GetRange(0, segments.Count - 1)))!.Item;
+        FileSystemItem? existing = FindChild(parent, newName);
+
+        if (existing != null && !ReferenceEquals(existing, located.Item))
+        {
+            throw new IOException($"A duplicate file name exists: '{newName}'.");
+        }
+
+        located.Item.Name = newName;
+
+        List<string> newSegments = segments.GetRange(0, segments.Count - 1);
+        newSegments.Add(newName);
+        UpdatePath(located.Item, Build(driveName, newSegments));
+
+        if (_saveOnChange)
+        {
+            _context.Save();
+        }
     }
 
     public bool IsProtectedFile(string path)
@@ -227,6 +259,40 @@ public class FileSystemService : IFileSystemService
         }
 
         return new Located(item, drive.Name, canonical);
+    }
+
+    private bool ContainsCurrentDirectory(string driveName, List<string> segments)
+    {
+        if (!string.Equals(driveName, _currentDrive, StringComparison.OrdinalIgnoreCase)
+            || segments.Count > _currentSegments.Count)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < segments.Count; i++)
+        {
+            if (!string.Equals(segments[i], _currentSegments[i], StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static void UpdatePath(FileSystemItem item, string path)
+    {
+        item.Path = path;
+
+        if (item is not Folder folder)
+        {
+            return;
+        }
+
+        foreach (FileSystemItem child in folder.GetChildItems())
+        {
+            UpdatePath(child, path.TrimEnd('\\') + "\\" + child.Name);
+        }
     }
 
     private Drive? FindDrive(string name)

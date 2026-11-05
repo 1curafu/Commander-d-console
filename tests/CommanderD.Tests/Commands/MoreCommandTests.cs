@@ -1,6 +1,6 @@
 using CommanderD.Commands;
+using CommanderD.Services;
 using CommanderD.Shell;
-using CommanderD.Tests.Fakes;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CommanderD.Tests.Commands;
@@ -10,24 +10,41 @@ public class MoreCommandTests
 {
     private const string SyntaxMessage = "The syntax of the command is incorrect.";
 
-    private readonly string _work = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "commanderd-more-tests", "work"));
-    private readonly FakeFileSystemService _fileSystem;
-    private readonly FakeConsoleService _console;
-    private readonly TestOutputWriter _outputWriter;
-    private readonly MoreCommand _command;
-
     private static readonly ConsoleKeyInfo Space = new(' ', ConsoleKey.Spacebar, false, false, false);
     private static readonly ConsoleKeyInfo Enter = new('\r', ConsoleKey.Enter, false, false, false);
     private static readonly ConsoleKeyInfo Q = new('q', ConsoleKey.Q, false, false, false);
     private static readonly ConsoleKeyInfo CtrlC = new('\u0003', ConsoleKey.C, false, false, true);
     private static readonly ConsoleKeyInfo X = new('x', ConsoleKey.X, false, false, false);
 
+    private readonly string _work = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "commanderd-more-tests", "work"));
+    private readonly MoreFakeFileSystem _fileSystem;
+    private readonly TestOutputWriter _outputWriter;
+    private readonly Queue<ConsoleKeyInfo> _keys = new();
+    private readonly MoreCommand _command;
+
+    private int _windowHeight = 25;
+    private int _readKeyCalls;
+
     public MoreCommandTests()
     {
-        _fileSystem = new FakeFileSystemService(_work);
-        _console = new FakeConsoleService();
+        _fileSystem = new MoreFakeFileSystem(_work);
         _outputWriter = new TestOutputWriter();
-        _command = new MoreCommand(_fileSystem, _console, _outputWriter);
+        _command = new MoreCommand(_fileSystem, _outputWriter, () => _windowHeight, ReadKey);
+    }
+
+    /// <summary>Returns the next queued key. When none are left, Q is returned so a test can never hang.</summary>
+    private ConsoleKeyInfo ReadKey()
+    {
+        _readKeyCalls++;
+        return _keys.Count > 0 ? _keys.Dequeue() : Q;
+    }
+
+    private void PressKeys(params ConsoleKeyInfo[] keys)
+    {
+        foreach (ConsoleKeyInfo key in keys)
+        {
+            _keys.Enqueue(key);
+        }
     }
 
     private void Run(params string[] arguments)
@@ -71,6 +88,16 @@ public class MoreCommandTests
     }
 
     [TestMethod]
+    public void More_InvalidPath_PrintsSyntaxError()
+    {
+        _fileSystem.ResolvePathException = new ArgumentException("bad path");
+
+        Run("x");
+
+        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
+    }
+
+    [TestMethod]
     public void More_ExistingFile_PrintsEachLine()
     {
         _fileSystem.AddFile(Path.Combine(_work, "test.txt"), "Zeile1\nZeile2");
@@ -91,9 +118,19 @@ public class MoreCommandTests
     }
 
     [TestMethod]
+    public void More_TrailingNewline_DoesNotPrintExtraEmptyLine()
+    {
+        _fileSystem.AddFile(Path.Combine(_work, "test.txt"), "a\nb\n");
+
+        Run("test.txt");
+
+        Assert.AreEqual("a" + Environment.NewLine + "b" + Environment.NewLine, _outputWriter.OutputBuffer);
+    }
+
+    [TestMethod]
     public void More_EmptyFile_PrintsNothing()
     {
-        _fileSystem.AddFile(Path.Combine(_work, "empty.txt"));
+        _fileSystem.AddFile(Path.Combine(_work, "empty.txt"), null);
 
         Run("empty.txt");
 
@@ -132,19 +169,21 @@ public class MoreCommandTests
     }
 
     [TestMethod]
-    public void More_InvalidPath_PrintsSyntaxError()
+    public void More_UnreadableFile_PrintsCannotAccess()
     {
-        _fileSystem.ResolvePathException = new ArgumentException("bad path");
+        string target = Path.Combine(_work, "locked.txt");
+        _fileSystem.AddFile(target, "geheim");
+        _fileSystem.GetEntriesException = new UnauthorizedAccessException();
 
-        Run("x");
+        Run("locked.txt");
 
-        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
+        Assert.AreEqual($"Cannot access file {target}" + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
     public void More_LongFile_ShowsOnlyFirstPage()
     {
-        _console.WindowHeight = 4;
+        _windowHeight = 4;
         AddLongFile(10);
 
         Run("long.txt");
@@ -157,7 +196,7 @@ public class MoreCommandTests
     [TestMethod]
     public void More_LongFile_FirstPageFillsWindowHeightMinusStatusRow()
     {
-        _console.WindowHeight = 6;
+        _windowHeight = 6;
         AddLongFile(20);
 
         Run("long.txt");
@@ -169,7 +208,7 @@ public class MoreCommandTests
     [TestMethod]
     public void More_LongFile_ShowsStatusWithPercentage()
     {
-        _console.WindowHeight = 4;
+        _windowHeight = 4;
         AddLongFile(10);
 
         Run("long.txt");
@@ -186,15 +225,15 @@ public class MoreCommandTests
 
         Assert.IsTrue(WasShown(5));
         Assert.IsFalse(_outputWriter.OutputBuffer.Contains("-- More"));
-        Assert.AreEqual(0, _console.ReadKeyCalls);
+        Assert.AreEqual(0, _readKeyCalls);
     }
 
     [TestMethod]
     public void More_Space_AdvancesOnePage()
     {
-        _console.WindowHeight = 4;
+        _windowHeight = 4;
         AddLongFile(10);
-        _console.PressKeys(Space, Q);
+        PressKeys(Space, Q);
 
         Run("long.txt");
 
@@ -206,9 +245,9 @@ public class MoreCommandTests
     [TestMethod]
     public void More_Enter_AdvancesOneLine()
     {
-        _console.WindowHeight = 4;
+        _windowHeight = 4;
         AddLongFile(10);
-        _console.PressKeys(Enter, Q);
+        PressKeys(Enter, Q);
 
         Run("long.txt");
 
@@ -220,61 +259,61 @@ public class MoreCommandTests
     [TestMethod]
     public void More_Q_EndsCommand()
     {
-        _console.WindowHeight = 4;
+        _windowHeight = 4;
         AddLongFile(10);
-        _console.PressKeys(Q, Space);
+        PressKeys(Q, Space);
 
         Run("long.txt");
 
         Assert.IsFalse(WasShown(4));
-        Assert.AreEqual(1, _console.ReadKeyCalls);
+        Assert.AreEqual(1, _readKeyCalls);
     }
 
     [TestMethod]
     public void More_CtrlC_EndsCommand()
     {
-        _console.WindowHeight = 4;
+        _windowHeight = 4;
         AddLongFile(10);
-        _console.PressKeys(CtrlC, Space);
+        PressKeys(CtrlC, Space);
 
         Run("long.txt");
 
         Assert.IsFalse(WasShown(4));
-        Assert.AreEqual(1, _console.ReadKeyCalls);
+        Assert.AreEqual(1, _readKeyCalls);
     }
 
     [TestMethod]
     public void More_OtherKey_IsIgnored()
     {
-        _console.WindowHeight = 4;
+        _windowHeight = 4;
         AddLongFile(10);
-        _console.PressKeys(X, Q);
+        PressKeys(X, Q);
 
         Run("long.txt");
 
         Assert.IsFalse(WasShown(4));
-        Assert.AreEqual(2, _console.ReadKeyCalls);
+        Assert.AreEqual(2, _readKeyCalls);
     }
 
     [TestMethod]
     public void More_SpaceUntilEnd_ShowsWholeFileAndStops()
     {
-        _console.WindowHeight = 4;
+        _windowHeight = 4;
         AddLongFile(10);
-        _console.PressKeys(Space, Space, Space);
+        PressKeys(Space, Space, Space);
 
         Run("long.txt");
 
-        Assert.AreEqual(3, _console.ReadKeyCalls);
+        Assert.AreEqual(3, _readKeyCalls);
         Assert.IsTrue(_outputWriter.OutputBuffer.EndsWith("Zeile 10" + Environment.NewLine));
     }
 
     [TestMethod]
     public void More_AfterKeyPress_StatusIsErased()
     {
-        _console.WindowHeight = 4;
+        _windowHeight = 4;
         AddLongFile(10);
-        _console.PressKeys(Enter, Q);
+        PressKeys(Enter, Q);
 
         Run("long.txt");
 
@@ -282,13 +321,62 @@ public class MoreCommandTests
         StringAssert.Contains(_outputWriter.OutputBuffer, status + "\r" + new string(' ', status.Length) + "\r" + "Zeile 04");
     }
 
-    [TestMethod]
-    public void More_TrailingNewline_DoesNotPrintExtraEmptyLine()
+    /// <summary>
+    /// Small file system for MORE tests. Unlike the shared FakeFileSystemService it stores file contents
+    /// and returns them through GetEntries, which is how MORE reads a file.
+    /// </summary>
+    private sealed class MoreFakeFileSystem(string currentDirectory) : IFileSystemService
     {
-        _fileSystem.AddFile(Path.Combine(_work, "test.txt"), "a\nb\n");
+        private readonly Dictionary<string, string?> _files = new(StringComparer.Ordinal);
+        private readonly HashSet<string> _directories = new(StringComparer.Ordinal) { currentDirectory };
 
-        Run("test.txt");
+        public string CurrentDirectory { get; } = currentDirectory;
 
-        Assert.AreEqual("a" + Environment.NewLine + "b" + Environment.NewLine, _outputWriter.OutputBuffer);
+        public Exception? ResolvePathException { get; set; }
+
+        public Exception? GetEntriesException { get; set; }
+
+        public void AddFile(string path, string? content) => _files[path] = content;
+
+        public void AddDirectory(string path) => _directories.Add(path);
+
+        public string ResolvePath(string path)
+        {
+            if (ResolvePathException != null)
+            {
+                throw ResolvePathException;
+            }
+
+            return Path.GetFullPath(path, CurrentDirectory);
+        }
+
+        public bool DirectoryExists(string path) => _directories.Contains(path);
+
+        public bool FileExists(string path) => _files.ContainsKey(path);
+
+        public IReadOnlyList<DirectoryEntry> GetEntries(string path)
+        {
+            if (GetEntriesException != null)
+            {
+                throw GetEntriesException;
+            }
+
+            if (_files.TryGetValue(path, out string? content))
+            {
+                return [new DirectoryEntry(Path.GetFileName(path), false, content?.Length ?? 0, DateTime.Now, content)];
+            }
+
+            throw new DirectoryNotFoundException(path);
+        }
+
+        public bool IsProtectedFile(string path) => false;
+
+        public void ChangeDirectory(string path) => throw new NotSupportedException();
+
+        public void CreateDirectory(string path) => throw new NotSupportedException();
+
+        public void DeleteFile(string path) => throw new NotSupportedException();
+
+        public void Rename(string path, string newName) => throw new NotSupportedException();
     }
 }

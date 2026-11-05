@@ -7,7 +7,6 @@ public class FakeFileSystemService : IFileSystemService
     private readonly HashSet<string> directories = new HashSet<string>(StringComparer.Ordinal);
     private readonly HashSet<string> files = new HashSet<string>(StringComparer.Ordinal);
     private readonly HashSet<string> protectedFiles = new HashSet<string>(StringComparer.Ordinal);
-    private readonly Dictionary<string, string> fileContents = new Dictionary<string, string>(StringComparer.Ordinal);
 
     public string CurrentDirectory { get; set; }
 
@@ -27,6 +26,14 @@ public class FakeFileSystemService : IFileSystemService
 
     public int DeleteFileCalls { get; private set; }
 
+    public Exception? RenameException { get; set; }
+
+    public int RenameCalls { get; private set; }
+
+    public string? RenamedTo { get; private set; }
+
+    private static readonly char[] InvalidRenameCharacters = ['\\', '/', ':'];
+
     public FakeFileSystemService(string currentDirectory)
     {
         CurrentDirectory = currentDirectory;
@@ -38,10 +45,9 @@ public class FakeFileSystemService : IFileSystemService
         directories.Add(path);
     }
 
-    public void AddFile(string path, string content = "")
+    public void AddFile(string path)
     {
         files.Add(path);
-        fileContents[path] = content;
     }
 
     public void AddProtectedFile(string path)
@@ -107,14 +113,42 @@ public class FakeFileSystemService : IFileSystemService
         files.Remove(path);
     }
 
-    public string ReadFile(string path)
+    public void Rename(string path, string newName)
     {
-        if (!files.Contains(path))
+        RenameCalls++;
+
+        if (RenameException != null)
+        {
+            throw RenameException;
+        }
+
+        if (newName.IndexOfAny(InvalidRenameCharacters) >= 0)
+        {
+            throw new ArgumentException($"The name '{newName}' is not valid.", nameof(newName));
+        }
+
+        string target = Path.Combine(Path.GetDirectoryName(path)!, newName);
+
+        if (!string.Equals(path, target, StringComparison.OrdinalIgnoreCase)
+            && (files.Contains(target) || directories.Contains(target)))
+        {
+            throw new IOException("A duplicate file name exists.");
+        }
+
+        if (files.Remove(path))
+        {
+            files.Add(target);
+        }
+        else if (directories.Remove(path))
+        {
+            directories.Add(target);
+        }
+        else
         {
             throw new FileNotFoundException(path);
         }
 
-        return fileContents.TryGetValue(path, out string? content) ? content : string.Empty;
+        RenamedTo = target;
     }
 
     public bool IsProtectedFile(string path)

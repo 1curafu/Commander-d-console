@@ -16,7 +16,7 @@ public interface IFileSystemService
 
     void DeleteFile(string path);
 
-    string ReadFile(string path);
+    void Rename(string path, string newName);
 
     bool IsProtectedFile(string path);
 
