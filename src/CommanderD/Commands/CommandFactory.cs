@@ -27,6 +27,8 @@ public class CommandFactory
             { "color", outputWriter => new SetColorCommand(consoleService, outputWriter) },
             { "cls", outputWriter => new ClsCommand(consoleService, outputWriter) },
             { "type", outputWriter => new TypeCommand(fileSystemService, outputWriter) },
+            { "ren", outputWriter => new RenCommand(fileSystemService, outputWriter) },
+			      { "rename", outputWriter => new RenCommand(fileSystemService, outputWriter) },
         };
     }
 
