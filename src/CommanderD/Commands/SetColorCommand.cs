@@ -12,11 +12,16 @@ public class SetColorCommand : Command
     private readonly IOutputWriter _outputWriter;
 
     public SetColorCommand(IConsoleService consoleService, IOutputWriter outputWriter)
-        : base("color", "Sets the default console foreground and background colors. Usage: COLOR [foreground [ON background]]", outputWriter)
+        : base("color", "Sets the default console foreground and background colors.", outputWriter)
     {
         _consoleService = consoleService;
         _outputWriter = outputWriter;
     }
+
+    public override string Usage =>
+        "COLOR [foreground [ON background]]\n" +
+        "COLOR (without arguments) resets to the default colors.\n\n" +
+        "Available colors:\n  " + string.Join(", ", ColorPalette.Names);
 
     public override void Execute(CommandContext context)
     {

@@ -15,6 +15,8 @@ public class DirCommand : Command
         _fileSystemService = fileSystemService;
     }
 
+    public override string Usage => "DIR [path]";
+
     public override void Execute(CommandContext context)
     {
         string param = string.Join(" ", context.Arguments);

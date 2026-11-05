@@ -1,4 +1,4 @@
-﻿namespace CommanderD.Services;
+namespace CommanderD.Services;
 
 public class ConsoleService : IConsoleService
 {
@@ -10,14 +10,11 @@ public class ConsoleService : IConsoleService
     {
         Console.BackgroundColor = background;
         Console.ForegroundColor = foreground;
-
-        Console.Clear();
     }
 
     public void ResetColors()
     {
         Console.ResetColor();
-        Console.Clear();
     }
 
     public void Clear()

@@ -190,4 +190,39 @@ public class SetColorCommandTests
 
         Assert.IsInstanceOfType(factory.Create("COLOR", new TestOutputWriter()), typeof(SetColorCommand));
     }
+
+    [TestMethod]
+    public void Color_ChangingColors_DoesNotClearTheScreen()
+    {
+        Run("green");
+        Run("red", "on", "blue");
+        Run();
+
+        Assert.AreEqual(0, _console.ClearCalls);
+    }
+
+    [TestMethod]
+    public void Usage_ListsAllAvailableColors()
+    {
+        foreach (string name in ColorPalette.Names)
+        {
+            StringAssert.Contains(_command.Usage, name);
+        }
+
+        StringAssert.Contains(_command.Usage, "Available colors:");
+    }
+
+    [TestMethod]
+    public void ColorPalette_Names_AreAllUsableAndHaveNoAliases()
+    {
+        foreach (string name in ColorPalette.Names)
+        {
+            Assert.IsTrue(ColorPalette.TryGet(name, out _), name);
+        }
+
+        Assert.IsFalse(ColorPalette.Names.Contains("grey"));
+        Assert.IsFalse(ColorPalette.Names.Contains("darkgrey"));
+        Assert.IsTrue(ColorPalette.Names.Contains("gray"));
+        Assert.IsTrue(ColorPalette.Names.Contains("darkgray"));
+    }
 }

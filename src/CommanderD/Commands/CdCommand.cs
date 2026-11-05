@@ -17,6 +17,8 @@ public class CdCommand : Command
         _outputWriter = outputWriter;
     }
 
+    public override string Usage => "CD [path]\nCD ..";
+
     public override void Execute(CommandContext context)
     {
         if (context.Arguments.Length == 0)
