@@ -169,15 +169,15 @@ public class FileSystemService : IFileSystemService
                 IEnumerable<DirectoryEntry> folders = folder.GetChildItems()
                     .OfType<Folder>()
                     .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
-                    .Select(item => new DirectoryEntry(item.Name, true, 0, item.CreatedOn));
+                    .Select(item => new DirectoryEntry(item.Name, true, 0, item.CreatedOn, null));
                 IEnumerable<DirectoryEntry> files = folder.GetChildItems()
                     .OfType<FsFile>()
                     .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
-                    .Select(item => new DirectoryEntry(item.Name, false, item.Size, item.CreatedOn));
+                    .Select(item => new DirectoryEntry(item.Name, false, item.Size, item.CreatedOn, item.Content));
                 return folders.Concat(files).ToList();
 
             case FsFile file:
-                return [new DirectoryEntry(file.Name, false, file.Size, file.CreatedOn)];
+                return [new DirectoryEntry(file.Name, false, file.Size, file.CreatedOn, file.Content)];
 
             default:
                 throw new DirectoryNotFoundException($"The path '{path}' does not exist.");
