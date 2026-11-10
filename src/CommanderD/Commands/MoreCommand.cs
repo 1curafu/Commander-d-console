@@ -3,31 +3,18 @@ using CommanderD.Shell;
 
 namespace CommanderD.Commands;
 
-
 public class MoreCommand : Command
 {
     private const string SyntaxErrorMessage = "The syntax of the command is incorrect.";
-    private const int DefaultWindowHeight = 25;
 
     private readonly IFileSystemService _fileSystemService;
-    private readonly IOutputWriter _outputWriter;
-    private readonly Func<int> _windowHeight;
-    private readonly Func<ConsoleKeyInfo> _readKey;
+    private readonly IConsoleService _consoleService;
 
-    public MoreCommand(IFileSystemService fileSystemService, IOutputWriter outputWriter)
-        : this(fileSystemService, outputWriter, GetConsoleWindowHeight, ReadConsoleKey)
-    {
-    }
-
-    
-    public MoreCommand(IFileSystemService fileSystemService, IOutputWriter outputWriter,
-        Func<int> windowHeight, Func<ConsoleKeyInfo> readKey)
+    public MoreCommand(IFileSystemService fileSystemService, IConsoleService consoleService, IOutputWriter outputWriter)
         : base("more", "Displays output one screen at a time.", outputWriter)
     {
         _fileSystemService = fileSystemService;
-        _outputWriter = outputWriter;
-        _windowHeight = windowHeight;
-        _readKey = readKey;
+        _consoleService = consoleService;
     }
 
     public override string Usage => "MORE <file>";
@@ -38,7 +25,7 @@ public class MoreCommand : Command
 
         if (name.Length == 0)
         {
-            _outputWriter.WriteLn(SyntaxErrorMessage);
+            OutputWriter.WriteLn(SyntaxErrorMessage);
             return;
         }
 
@@ -50,7 +37,7 @@ public class MoreCommand : Command
         }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
         {
-            _outputWriter.WriteLn(SyntaxErrorMessage);
+            OutputWriter.WriteLn(SyntaxErrorMessage);
             return;
         }
 
@@ -58,14 +45,14 @@ public class MoreCommand : Command
 
         if (content == null)
         {
-            _outputWriter.WriteLn($"Cannot access file {target}");
+            OutputWriter.WriteLn($"Cannot access file {target}");
             return;
         }
 
         ShowPaged(SplitLines(content));
     }
 
-      private string? ReadContent(string target)
+    private string? ReadContent(string target)
     {
         if (!_fileSystemService.FileExists(target))
         {
@@ -74,7 +61,6 @@ public class MoreCommand : Command
 
         try
         {
-           
             IReadOnlyList<DirectoryEntry> entries = _fileSystemService.GetEntries(target);
             return entries.Count == 1 ? entries[0].Content ?? string.Empty : null;
         }
@@ -86,19 +72,19 @@ public class MoreCommand : Command
 
     private void ShowPaged(string[] lines)
     {
-      
-        int pageSize = Math.Max(1, _windowHeight() - 1);
+        // Eine Zeile frei lassen für die "-- More --" Anzeige
+        int pageSize = Math.Max(1, _consoleService.WindowHeight - 1);
         int shown = ShowLines(lines, 0, pageSize);
 
         while (shown < lines.Length)
         {
             string status = $"-- More ({shown * 100 / lines.Length}%) --";
-            _outputWriter.Write(status);
+            OutputWriter.Write(status);
 
-            ConsoleKeyInfo key = _readKey();
+            ConsoleKeyInfo key = _consoleService.ReadKey();
 
-          
-            _outputWriter.Write("\r" + new string(' ', status.Length) + "\r");
+            // Statuszeile wieder löschen
+            OutputWriter.Write("\r" + new string(' ', status.Length) + "\r");
 
             if (IsQuit(key))
             {
@@ -122,7 +108,7 @@ public class MoreCommand : Command
 
         for (int i = start; i < end; i++)
         {
-            _outputWriter.WriteLn(lines[i]);
+            OutputWriter.WriteLn(lines[i]);
         }
 
         return end;
@@ -143,42 +129,7 @@ public class MoreCommand : Command
 
         string[] lines = content.Replace("\r\n", "\n").Split('\n');
 
-      
+        // Ein abschliessender Zeilenumbruch erzeugt keine leere Extrazeile
         return lines[^1].Length == 0 ? lines[..^1] : lines;
-    }
-
-    private static int GetConsoleWindowHeight()
-    {
-        try
-        {
-            return Console.WindowHeight > 0 ? Console.WindowHeight : DefaultWindowHeight;
-        }
-        catch (IOException)
-        {
-           
-            return DefaultWindowHeight;
-        }
-    }
-
-    private static ConsoleKeyInfo ReadConsoleKey()
-    {
-        if (Console.IsInputRedirected)
-        {
-            
-            return new ConsoleKeyInfo(' ', ConsoleKey.Spacebar, false, false, false);
-        }
-
-        
-        bool previous = Console.TreatControlCAsInput;
-        Console.TreatControlCAsInput = true;
-
-        try
-        {
-            return Console.ReadKey(intercept: true);
-        }
-        finally
-        {
-            Console.TreatControlCAsInput = previous;
-        }
     }
 }

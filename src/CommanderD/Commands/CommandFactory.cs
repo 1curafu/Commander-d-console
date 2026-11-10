@@ -33,7 +33,7 @@ public class CommandFactory
             { "type", outputWriter => new TypeCommand(fileSystemService, outputWriter) },
             { "ren", outputWriter => new RenCommand(fileSystemService, outputWriter) },
             { "rename", outputWriter => new RenCommand(fileSystemService, outputWriter) },
-            { "more", outputWriter => new MoreCommand(fileSystemService, outputWriter) },
+            { "more", outputWriter => new MoreCommand(fileSystemService, consoleService, outputWriter) },
             { "find", outputWriter => new FindCommand(fileSystemService, outputWriter) },
         };
     }
