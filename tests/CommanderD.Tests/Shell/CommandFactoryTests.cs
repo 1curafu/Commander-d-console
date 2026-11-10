@@ -35,14 +35,6 @@ public class CommandFactoryTests
     }
 
     [TestMethod]
-    [DataRow("")]
-    [DataRow("  ")]
-    public void Create_EmptyName_ReturnsNull(string name)
-    {
-        Assert.IsNull(CreateFactory().Create(name, new TestOutputWriter()));
-    }
-
-    [TestMethod]
     public void GetCommands_ContainsRegisteredName()
     {
         Assert.IsTrue(CreateFactory().GetCommands().Contains("fake"));

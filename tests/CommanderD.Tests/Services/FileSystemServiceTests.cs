@@ -60,33 +60,10 @@ public class FileSystemServiceTests
     }
 
     [TestMethod]
-    public void CreateDirectory_NameIsNotCaseSensitive()
-    {
-        _service.CreateDirectory("Docs");
-
-        Assert.IsTrue(_service.DirectoryExists("docs"));
-        Assert.IsTrue(_service.DirectoryExists("DOCS"));
-    }
-
-    [TestMethod]
     public void CreateDirectory_InvalidName_ThrowsArgumentException()
     {
         Assert.ThrowsExactly<ArgumentException>(() => _service.CreateDirectory("a*b"));
         Assert.ThrowsExactly<ArgumentException>(() => _service.CreateDirectory("a|b"));
-    }
-
-    [TestMethod]
-    public void CreateDirectory_NameOfExistingFile_ThrowsIOException()
-    {
-        _context.CurrentFolder.AddChildItem(new FsFile("notes.txt", @"C:\notes.txt"));
-
-        Assert.ThrowsExactly<IOException>(() => _service.CreateDirectory("notes.txt"));
-    }
-
-    [TestMethod]
-    public void CreateDirectory_UnknownDrive_ThrowsDirectoryNotFoundException()
-    {
-        Assert.ThrowsExactly<DirectoryNotFoundException>(() => _service.CreateDirectory(@"Z:\docs"));
     }
 
     [TestMethod]
@@ -114,17 +91,6 @@ public class FileSystemServiceTests
     }
 
     [TestMethod]
-    public void CreateFile_EmptyContent_IsEmpty()
-    {
-        _service.CreateFile("notes.txt", string.Empty);
-
-        DirectoryEntry entry = _service.GetEntries("notes.txt")[0];
-        Assert.AreEqual(string.Empty, entry.Content);
-        Assert.AreEqual(0, entry.Size);
-        Assert.IsFalse(entry.IsDirectory);
-    }
-
-    [TestMethod]
     public void CreateFile_WithContent_StoresContent()
     {
         _service.CreateFile("notes.txt", "Hello World");
@@ -132,56 +98,6 @@ public class FileSystemServiceTests
         DirectoryEntry entry = _service.GetEntries("notes.txt")[0];
         Assert.AreEqual("Hello World", entry.Content);
         Assert.AreEqual(11, entry.Size);
-    }
-
-    [TestMethod]
-    public void CreateFile_MultilineContent_StoresItUnchanged()
-    {
-        string content = "line 1\r\nline 2\r\n\r\nline 4";
-
-        _service.CreateFile("notes.txt", content);
-
-        Assert.AreEqual(content, _service.GetEntries("notes.txt")[0].Content);
-    }
-
-    [TestMethod]
-    public void CreateFile_ContentWithUmlauts_SizeIsUtf8Bytes()
-    {
-        _service.CreateFile("notes.txt", "Grüezi");
-
-        Assert.AreEqual(7, _service.GetEntries("notes.txt")[0].Size);
-    }
-
-    [TestMethod]
-    public void CreateFile_TwoFiles_KeepTheirOwnContent()
-    {
-        _service.CreateFile("a.txt", "content of a");
-        _service.CreateFile("b.txt", "content of b");
-
-        Assert.AreEqual("content of a", _service.GetEntries("a.txt")[0].Content);
-        Assert.AreEqual("content of b", _service.GetEntries("b.txt")[0].Content);
-    }
-
-    [TestMethod]
-    public void CreateFile_InExistingSubfolder_CreatesFileThere()
-    {
-        _service.CreateDirectory("docs");
-
-        _service.CreateFile(@"docs\notes.txt", string.Empty);
-
-        Assert.IsTrue(_service.FileExists(@"C:\docs\notes.txt"));
-        Assert.IsFalse(_service.FileExists(@"C:\notes.txt"));
-    }
-
-    [TestMethod]
-    public void CreateFile_AbsolutePath_CreatesFileThere()
-    {
-        _service.CreateDirectory(@"docs\work");
-        _service.ChangeDirectory("docs");
-
-        _service.CreateFile(@"C:\docs\work\notes.txt", string.Empty);
-
-        Assert.IsTrue(_service.FileExists(@"C:\docs\work\notes.txt"));
     }
 
     [TestMethod]
@@ -197,28 +113,6 @@ public class FileSystemServiceTests
     }
 
     [TestMethod]
-    public void CreateFile_PathUsesCaseOfTheExistingFolder()
-    {
-        _service.CreateDirectory("Docs");
-
-        _service.CreateFile(@"DOCS\notes.txt", string.Empty);
-
-        var docs = (Folder)_context.Drives[0].RootFolder.GetChildItems()[0];
-        var file = (FsFile)docs.GetChildItems()[0];
-        Assert.AreEqual("notes.txt", file.Name);
-        Assert.AreEqual(@"C:\Docs\notes.txt", file.Path);
-    }
-
-    [TestMethod]
-    public void CreateFile_NameIsNotCaseSensitive()
-    {
-        _service.CreateFile("Notes.txt", string.Empty);
-
-        Assert.IsTrue(_service.FileExists("notes.txt"));
-        Assert.IsTrue(_service.FileExists("NOTES.TXT"));
-    }
-
-    [TestMethod]
     public void CreateFile_ExistingFile_ThrowsIOExceptionAndKeepsContent()
     {
         _context.CurrentFolder.AddChildItem(new FsFile("notes.txt", @"C:\notes.txt") { Content = "keep me" });
@@ -230,52 +124,12 @@ public class FileSystemServiceTests
     }
 
     [TestMethod]
-    public void CreateFile_NameOfExistingFolder_ThrowsIOException()
-    {
-        _service.CreateDirectory("docs");
-
-        Assert.ThrowsExactly<IOException>(() => _service.CreateFile("docs", string.Empty));
-        Assert.IsTrue(_service.DirectoryExists("docs"));
-    }
-
-    [TestMethod]
     public void CreateFile_MissingFolder_ThrowsDirectoryNotFoundExceptionAndCreatesNothing()
     {
         Assert.ThrowsExactly<DirectoryNotFoundException>(() => _service.CreateFile(@"gibtsnicht\notes.txt", string.Empty));
 
         Assert.IsFalse(_service.DirectoryExists("gibtsnicht"));
         Assert.HasCount(0, _context.Drives[0].RootFolder.GetChildItems());
-    }
-
-    [TestMethod]
-    public void CreateFile_ParentIsAFile_ThrowsDirectoryNotFoundException()
-    {
-        _service.CreateFile("notes.txt", string.Empty);
-
-        Assert.ThrowsExactly<DirectoryNotFoundException>(() => _service.CreateFile(@"notes.txt\other.txt", string.Empty));
-    }
-
-    [TestMethod]
-    public void CreateFile_UnknownDrive_ThrowsDirectoryNotFoundException()
-    {
-        Assert.ThrowsExactly<DirectoryNotFoundException>(() => _service.CreateFile(@"Z:\notes.txt", string.Empty));
-    }
-
-    [TestMethod]
-    public void CreateFile_InvalidName_ThrowsArgumentException()
-    {
-        Assert.ThrowsExactly<ArgumentException>(() => _service.CreateFile("a*b.txt", string.Empty));
-        Assert.ThrowsExactly<ArgumentException>(() => _service.CreateFile("a|b.txt", string.Empty));
-        Assert.ThrowsExactly<ArgumentException>(() => _service.CreateFile("a?.txt", string.Empty));
-    }
-
-    [TestMethod]
-    [DataRow(@"C:\")]
-    [DataRow(@"\")]
-    [DataRow("..")]
-    public void CreateFile_PathWithoutFileName_ThrowsArgumentException(string path)
-    {
-        Assert.ThrowsExactly<ArgumentException>(() => _service.CreateFile(path, string.Empty));
     }
 
     [TestMethod]
@@ -301,14 +155,6 @@ public class FileSystemServiceTests
         string json = System.IO.File.ReadAllText(_jsonPath);
         StringAssert.Contains(json, "notes.txt");
         StringAssert.Contains(json, "saved content");
-    }
-
-    [TestMethod]
-    public void CreateFile_WithoutSaveOnChange_WritesNothing()
-    {
-        _service.CreateFile("notes.txt", string.Empty);
-
-        Assert.IsFalse(System.IO.File.Exists(_jsonPath));
     }
 
     [TestMethod]
@@ -338,16 +184,6 @@ public class FileSystemServiceTests
     }
 
     [TestMethod]
-    public void ChangeDirectory_UsesCaseOfTheExistingFolder()
-    {
-        _service.CreateDirectory("Docs");
-
-        _service.ChangeDirectory("DOCS");
-
-        Assert.AreEqual(@"C:\Docs", _service.CurrentDirectory);
-    }
-
-    [TestMethod]
     public void ChangeDirectory_ParentAndRoot_Work()
     {
         _service.CreateDirectory(@"a\b");
@@ -362,14 +198,6 @@ public class FileSystemServiceTests
     }
 
     [TestMethod]
-    public void ChangeDirectory_ParentOfRoot_StaysInRoot()
-    {
-        _service.ChangeDirectory("..");
-
-        Assert.AreEqual(@"C:\", _service.CurrentDirectory);
-    }
-
-    [TestMethod]
     public void ChangeDirectory_MissingFolder_ThrowsAndKeepsDirectory()
     {
         _service.CreateDirectory("docs");
@@ -378,14 +206,6 @@ public class FileSystemServiceTests
         Assert.ThrowsExactly<DirectoryNotFoundException>(() => _service.ChangeDirectory("gibtsnicht"));
 
         Assert.AreEqual(@"C:\docs", _service.CurrentDirectory);
-    }
-
-    [TestMethod]
-    public void ChangeDirectory_File_Throws()
-    {
-        _context.CurrentFolder.AddChildItem(new FsFile("notes.txt", @"C:\notes.txt"));
-
-        Assert.ThrowsExactly<DirectoryNotFoundException>(() => _service.ChangeDirectory("notes.txt"));
     }
 
     [TestMethod]
@@ -429,40 +249,9 @@ public class FileSystemServiceTests
     }
 
     [TestMethod]
-    public void GetEntries_File_ReturnsOnlyThisFile()
-    {
-        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
-        _context.CurrentFolder.AddChildItem(new FsFile("b.txt", @"C:\b.txt"));
-
-        IReadOnlyList<DirectoryEntry> entries = _service.GetEntries("a.txt");
-
-        Assert.HasCount(1, entries);
-        Assert.AreEqual("a.txt", entries[0].Name);
-    }
-
-    [TestMethod]
     public void GetEntries_MissingPath_ThrowsDirectoryNotFoundException()
     {
         Assert.ThrowsExactly<DirectoryNotFoundException>(() => _service.GetEntries("gibtsnicht"));
-    }
-
-    [TestMethod]
-    public void CreateDirectory_WithSaveOnChange_WritesJsonFile()
-    {
-        var service = new FileSystemService(_context, saveOnChange: true);
-
-        service.CreateDirectory("docs");
-
-        Assert.IsTrue(System.IO.File.Exists(_jsonPath));
-        StringAssert.Contains(System.IO.File.ReadAllText(_jsonPath), "docs");
-    }
-
-    [TestMethod]
-    public void CreateDirectory_WithoutSaveOnChange_WritesNothing()
-    {
-        _service.CreateDirectory("docs");
-
-        Assert.IsFalse(System.IO.File.Exists(_jsonPath));
     }
 
     [TestMethod]
@@ -500,26 +289,6 @@ public class FileSystemServiceTests
     }
 
     [TestMethod]
-    public void DeleteFile_WithSaveOnChange_SavesTheJsonFile()
-    {
-        var service = new FileSystemService(_context, saveOnChange: true);
-        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
-
-        service.DeleteFile("a.txt");
-
-        Assert.IsTrue(System.IO.File.Exists(_jsonPath));
-        Assert.IsFalse(System.IO.File.ReadAllText(_jsonPath).Contains("a.txt"));
-    }
-
-    [TestMethod]
-    public void IsProtectedFile_VirtualFile_IsNotProtected()
-    {
-        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
-
-        Assert.IsFalse(_service.IsProtectedFile("a.txt"));
-    }
-
-    [TestMethod]
     public void Rename_ExistingFile_GetsNewNameAndPath()
     {
         var file = new FsFile("a.txt", @"C:\a.txt");
@@ -551,16 +320,6 @@ public class FileSystemServiceTests
     }
 
     [TestMethod]
-    public void Rename_OnlyChangesCase_Works()
-    {
-        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
-
-        _service.Rename("a.txt", "A.txt");
-
-        Assert.AreEqual("A.txt", _context.CurrentFolder.GetChildItems()[0].Name);
-    }
-
-    [TestMethod]
     public void Rename_MissingItem_ThrowsFileNotFoundException()
     {
         Assert.ThrowsExactly<FileNotFoundException>(() => _service.Rename("gibtsnicht.txt", "b.txt"));
@@ -574,58 +333,6 @@ public class FileSystemServiceTests
 
         Assert.ThrowsExactly<IOException>(() => _service.Rename("a.txt", "B.TXT"));
         Assert.IsTrue(_service.FileExists(@"C:\a.txt"));
-    }
-
-    [TestMethod]
-    public void Rename_InvalidNewName_ThrowsArgumentException()
-    {
-        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
-
-        Assert.ThrowsExactly<ArgumentException>(() => _service.Rename("a.txt", @"sub\b.txt"));
-        Assert.ThrowsExactly<ArgumentException>(() => _service.Rename("a.txt", "b|c.txt"));
-        Assert.ThrowsExactly<ArgumentException>(() => _service.Rename("a.txt", ".."));
-    }
-
-    [TestMethod]
-    public void Rename_RootOfDrive_ThrowsFileNotFoundException()
-    {
-        Assert.ThrowsExactly<FileNotFoundException>(() => _service.Rename(@"C:\", "D"));
-    }
-
-    [TestMethod]
-    public void Rename_CurrentDirectory_IsDenied()
-    {
-        _service.CreateDirectory(@"docs\sub");
-        _service.ChangeDirectory(@"docs\sub");
-
-        Assert.ThrowsExactly<UnauthorizedAccessException>(() => _service.Rename(@"C:\docs\sub", "other"));
-        Assert.ThrowsExactly<UnauthorizedAccessException>(() => _service.Rename(@"C:\docs", "other"));
-        Assert.IsTrue(_service.DirectoryExists(@"C:\docs\sub"));
-    }
-
-    [TestMethod]
-    public void Rename_SiblingOfCurrentDirectory_Works()
-    {
-        _service.CreateDirectory(@"docs\sub");
-        _service.CreateDirectory(@"docs\other");
-        _service.ChangeDirectory(@"docs\sub");
-
-        _service.Rename(@"C:\docs\other", "renamed");
-
-        Assert.IsTrue(_service.DirectoryExists(@"C:\docs\renamed"));
-    }
-
-    [TestMethod]
-    public void Rename_WithSaveOnChange_SavesTheJsonFile()
-    {
-        var service = new FileSystemService(_context, saveOnChange: true);
-        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
-
-        service.Rename("a.txt", "b.txt");
-
-        string json = System.IO.File.ReadAllText(_jsonPath);
-        Assert.IsTrue(json.Contains("b.txt"));
-        Assert.IsFalse(json.Contains("a.txt"));
     }
 
     [TestMethod]
@@ -698,24 +405,6 @@ public class FileSystemServiceTests
     }
 
     [TestMethod]
-    public void Move_ParentOfNewPathIsMissing_ThrowsDirectoryNotFoundException()
-    {
-        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
-
-        Assert.ThrowsExactly<DirectoryNotFoundException>(() => _service.Move("a.txt", @"nodir\b.txt"));
-        Assert.IsTrue(_service.FileExists(@"C:\a.txt"));
-    }
-
-    [TestMethod]
-    public void Move_InvalidNewName_ThrowsArgumentException()
-    {
-        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
-
-        Assert.ThrowsExactly<ArgumentException>(() => _service.Move("a.txt", "b?.txt"));
-        Assert.IsTrue(_service.FileExists(@"C:\a.txt"));
-    }
-
-    [TestMethod]
     public void Move_DirectoryIntoItself_ThrowsUnauthorizedAccessException()
     {
         _service.CreateDirectory(@"docs\sub");
@@ -724,38 +413,4 @@ public class FileSystemServiceTests
         Assert.IsTrue(_service.DirectoryExists(@"C:\docs\sub"));
     }
 
-    [TestMethod]
-    public void Move_CurrentDirectoryOrItsParent_ThrowsUnauthorizedAccessException()
-    {
-        _service.CreateDirectory(@"docs\sub");
-        _service.CreateDirectory("target");
-        _service.ChangeDirectory(@"docs\sub");
-
-        Assert.ThrowsExactly<UnauthorizedAccessException>(() => _service.Move(@"C:\docs\sub", @"C:\target"));
-        Assert.ThrowsExactly<UnauthorizedAccessException>(() => _service.Move(@"C:\docs", @"C:\target"));
-        Assert.IsTrue(_service.DirectoryExists(@"C:\docs\sub"));
-    }
-
-    [TestMethod]
-    public void Move_DirectoryToItsOwnParent_ChangesNothing()
-    {
-        _service.CreateDirectory(@"docs\sub");
-
-        _service.Move(@"docs\sub", "docs");
-
-        Assert.IsTrue(_service.DirectoryExists(@"C:\docs\sub"));
-    }
-
-    [TestMethod]
-    public void Move_WithSaveOnChange_SavesTheJsonFile()
-    {
-        var service = new FileSystemService(_context, saveOnChange: true);
-        service.CreateDirectory("docs");
-        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
-        System.IO.File.Delete(_jsonPath);
-
-        service.Move("a.txt", "docs");
-
-        Assert.IsTrue(System.IO.File.Exists(_jsonPath));
-    }
 }

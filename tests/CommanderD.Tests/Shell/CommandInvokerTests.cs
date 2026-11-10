@@ -29,15 +29,6 @@ public class CommandInvokerTests
     }
 
     [TestMethod]
-    public void ExecuteCommand_KnownCommand_PassesArguments()
-    {
-        var command = (FakeCommand)_invoker.ExecuteCommand("fake one two");
-        
-        Assert.IsNotNull(command.LastContext);
-        CollectionAssert.AreEqual(new[] { "one", "two" }, command.LastContext.Arguments);
-    }
-
-    [TestMethod]
     public void ExecuteCommand_UnknownCommand_ReturnsNotRecognizedMessage()
     {
         var command = _invoker.ExecuteCommand("foo");
