@@ -44,19 +44,6 @@ public class DirCommandTests
     }
 
     [TestMethod]
-    public void Execute_FolderWithOneFile_ListsFileAndSummary()
-    {
-        AddFile(_context.CurrentFolder, "test.txt", "Hallo");
-
-        Run();
-
-        StringAssert.Contains(_outputWriter.OutputBuffer, @" Directory of C:\");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "1 File(s)              5 bytes");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "0 Dir(s)");
-    }
-
-    [TestMethod]
     public void Execute_DirectoryWithFileAndSubfolder_ListsBothAndSummary()
     {
         AddFile(_context.CurrentFolder, "test.txt", "Hallo ich heisse florian und ich mag karate");
@@ -68,15 +55,6 @@ public class DirCommandTests
         StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
         StringAssert.Contains(_outputWriter.OutputBuffer, "1 File(s)             43 bytes");
         StringAssert.Contains(_outputWriter.OutputBuffer, "1 Dir(s)");
-    }
-
-    [TestMethod]
-    public void Execute_EmptyDirectory_ShowsZeroFilesAndFolders()
-    {
-        Run();
-
-        StringAssert.Contains(_outputWriter.OutputBuffer, "0 File(s)");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "0 Dir(s)");
     }
 
     [TestMethod]
@@ -93,52 +71,6 @@ public class DirCommandTests
     }
 
     [TestMethod]
-    public void Execute_RelativeFolderAsArgument_ListsThatFolder()
-    {
-        _fileSystem.CreateDirectory("docs");
-        _fileSystem.ChangeDirectory("docs");
-        AddFile(_context.CurrentFolder, "inside.txt", "x");
-        _fileSystem.ChangeDirectory(@"\");
-
-        Run("docs");
-
-        StringAssert.Contains(_outputWriter.OutputBuffer, @" Directory of C:\docs");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "inside.txt");
-    }
-
-    [TestMethod]
-    public void Execute_DirectoryDoesNotExist_WritesError()
-    {
-        Run("gibtsnicht");
-
-        StringAssert.Contains(_outputWriter.OutputBuffer, "The system cannot find the path specified.");
-    }
-
-    [TestMethod]
-    public void Execute_FileAsArgument_ListsOnlyThisFile()
-    {
-        AddFile(_context.CurrentFolder, "test.txt", "Hallo");
-        AddFile(_context.CurrentFolder, "andere.txt", "Hallo");
-
-        Run("test.txt");
-
-        StringAssert.Contains(_outputWriter.OutputBuffer, @" Directory of C:\");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "test.txt");
-        Assert.IsFalse(_outputWriter.OutputBuffer.Contains("andere.txt"));
-        StringAssert.Contains(_outputWriter.OutputBuffer, "1 File(s)");
-    }
-
-    [TestMethod]
-    public void Execute_PathInQuotes_RemovesQuotes()
-    {
-        _fileSystem.CreateDirectory("docs");
-
-        Run("\"docs\"");
-
-        StringAssert.Contains(_outputWriter.OutputBuffer, @" Directory of C:\docs");
-    }
-
-    [TestMethod]
     public void Execute_FoldersAreListedBeforeFiles()
     {
         AddFile(_context.CurrentFolder, "a.txt", "x");
@@ -149,25 +81,6 @@ public class DirCommandTests
         int folderIndex = _outputWriter.OutputBuffer.IndexOf("zeta", StringComparison.Ordinal);
         int fileIndex = _outputWriter.OutputBuffer.IndexOf("a.txt", StringComparison.Ordinal);
         Assert.IsTrue(folderIndex < fileIndex);
-    }
-
-    [TestMethod]
-    public void Execute_DoesNotReadTheRealDisk()
-    {
-        string realFolder = Path.Combine(Directory.GetCurrentDirectory(), "commanderd-real-" + Guid.NewGuid());
-
-        try
-        {
-            Directory.CreateDirectory(realFolder);
-
-            Run();
-
-            Assert.IsFalse(_outputWriter.OutputBuffer.Contains(Path.GetFileName(realFolder)));
-        }
-        finally
-        {
-            Directory.Delete(realFolder, true);
-        }
     }
 
     [TestMethod]

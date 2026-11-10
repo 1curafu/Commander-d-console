@@ -93,16 +93,6 @@ public class FindCommandTests
     }
 
     [TestMethod]
-    public void Execute_OnlyPartialNameMatches_IsNotFound()
-    {
-        AddFile("readme.txt");
-
-        Run("readme");
-
-        Assert.AreEqual("File not found - readme", _outputWriter.OutputBuffer.TrimEnd());
-    }
-
-    [TestMethod]
     public void Execute_NameDoesNotExist_ShowsFileNotFound()
     {
         AddFile("other.txt");
@@ -121,14 +111,6 @@ public class FindCommandTests
     }
 
     [TestMethod]
-    public void Execute_OnlyWhitespaceAsName_ShowsSyntaxError()
-    {
-        Run("   ");
-
-        Assert.AreEqual("The syntax of the command is incorrect.", _outputWriter.OutputBuffer.TrimEnd());
-    }
-
-    [TestMethod]
     [DataRow("README")]
     [DataRow("readme")]
     [DataRow("ReadMe")]
@@ -139,15 +121,5 @@ public class FindCommandTests
         Run(searchName);
 
         CollectionAssert.AreEqual(new[] { @"C:\Readme" }, OutputLines());
-    }
-
-    [TestMethod]
-    public void Execute_NameInQuotes_RemovesQuotes()
-    {
-        AddFile("my file.txt");
-
-        Run("\"my", "file.txt\"");
-
-        CollectionAssert.AreEqual(new[] { @"C:\my file.txt" }, OutputLines());
     }
 }

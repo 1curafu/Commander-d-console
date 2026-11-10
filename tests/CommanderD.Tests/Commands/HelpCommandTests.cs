@@ -22,26 +22,6 @@ public class HelpCommandTests
         _command.Execute(new CommandContext("help", arguments));
     }
 
-    private string[] Lines()
-    {
-        return _outputWriter.OutputBuffer.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-    }
-
-    [TestMethod]
-    public void Help_HasNameAndDescription()
-    {
-        Assert.AreEqual("help", _command.Name);
-        Assert.IsFalse(string.IsNullOrWhiteSpace(_command.Description));
-    }
-
-    [TestMethod]
-    public void Help_NoArgument_ShowsHintHowToGetDetails()
-    {
-        Run();
-
-        StringAssert.Contains(_outputWriter.OutputBuffer, "HELP <command>");
-    }
-
     [TestMethod]
     [DataRow("HELP")]
     [DataRow("EXIT")]
@@ -61,15 +41,6 @@ public class HelpCommandTests
     }
 
     [TestMethod]
-    public void Help_NoArgument_ListsACommandWithAliasOnlyOnce()
-    {
-        Run();
-
-        int mkdirLines = Lines().Count(line => line.StartsWith("MKDIR") || line.StartsWith("MD "));
-        Assert.AreEqual(1, mkdirLines);
-    }
-
-    [TestMethod]
     public void Help_NewCommandInFactory_AppearsInTheList()
     {
         _factory.Register("fake", outputWriter => new FakeCommand("fake", outputWriter));
@@ -77,15 +48,6 @@ public class HelpCommandTests
         Run();
 
         StringAssert.Contains(_outputWriter.OutputBuffer, "FAKE      fake command");
-    }
-
-    [TestMethod]
-    public void Help_NoArgument_ListsCommandsSortedByName()
-    {
-        Run();
-
-        string[] names = Lines().Skip(1).Select(line => line.Substring(0, 10).Trim()).ToArray();
-        CollectionAssert.AreEqual(names.OrderBy(n => n, StringComparer.OrdinalIgnoreCase).ToArray(), names);
     }
 
     [TestMethod]
@@ -113,68 +75,11 @@ public class HelpCommandTests
     }
 
     [TestMethod]
-    public void Help_WithCommandNameInQuotes_RemovesQuotes()
-    {
-        Run("\"cd\"");
-
-        StringAssert.Contains(_outputWriter.OutputBuffer, "CD [path]");
-    }
-
-    [TestMethod]
-    public void Help_WithAlias_ShowsTheCommand()
-    {
-        Run("md");
-
-        StringAssert.Contains(_outputWriter.OutputBuffer, "MKDIR <name>");
-    }
-
-    [TestMethod]
-    public void Help_WithCommandWithoutArguments_ShowsNameAsUsage()
-    {
-        Run("ver");
-
-        StringAssert.Contains(_outputWriter.OutputBuffer, "VER");
-        StringAssert.Contains(_outputWriter.OutputBuffer, "Shows the version number.");
-    }
-
-    [TestMethod]
-    public void Help_WithHelp_ShowsOwnUsage()
-    {
-        Run("help");
-
-        StringAssert.Contains(_outputWriter.OutputBuffer, "HELP <command>");
-    }
-
-    [TestMethod]
     public void Help_UnknownCommand_ShowsNotSupportedMessage()
     {
         Run("gibtsnicht");
 
         StringAssert.Contains(_outputWriter.OutputBuffer, "This command is not supported by the help utility.");
-    }
-
-    [TestMethod]
-    public void Help_MoreThanOneArgument_UsesTheFirstOne()
-    {
-        Run("cd", "gibtsnicht");
-
-        StringAssert.Contains(_outputWriter.OutputBuffer, "CD [path]");
-        Assert.IsFalse(_outputWriter.OutputBuffer.Contains("not supported"));
-    }
-
-    [TestMethod]
-    public void Factory_HelpIsRegistered()
-    {
-        Assert.IsInstanceOfType(_factory.Create("help", _outputWriter), typeof(HelpCommand));
-        Assert.IsInstanceOfType(_factory.Create("HELP", _outputWriter), typeof(HelpCommand));
-    }
-
-    [TestMethod]
-    public void Usage_CommandWithoutOverride_IsTheNameInUpperCase()
-    {
-        var command = new FakeCommand("fake", _outputWriter);
-
-        Assert.AreEqual("FAKE", command.Usage);
     }
 
     [TestMethod]

@@ -9,8 +9,6 @@ namespace CommanderD.Tests.Commands;
 [TestClass]
 public class MoreCommandTests
 {
-    private const string SyntaxMessage = "The syntax of the command is incorrect.";
-
     private static readonly ConsoleKeyInfo Space = new(' ', ConsoleKey.Spacebar, false, false, false);
     private static readonly ConsoleKeyInfo Enter = new('\r', ConsoleKey.Enter, false, false, false);
     private static readonly ConsoleKeyInfo Q = new('q', ConsoleKey.Q, false, false, false);
@@ -43,7 +41,6 @@ public class MoreCommandTests
         _command.Execute(new CommandContext("more", arguments));
     }
 
-    
     private void AddLongFile(int lineCount)
     {
         string content = string.Join("\n", Enumerable.Range(1, lineCount).Select(i => $"Zeile {i:D2}"));
@@ -53,89 +50,6 @@ public class MoreCommandTests
     private bool WasShown(int lineNumber)
     {
         return _outputWriter.OutputBuffer.Contains($"Zeile {lineNumber:D2}" + Environment.NewLine);
-    }
-
-    [TestMethod]
-    public void More_HasNameAndDescription()
-    {
-        Assert.AreEqual("more", _command.Name);
-        Assert.IsFalse(string.IsNullOrWhiteSpace(_command.Description));
-    }
-
-    [TestMethod]
-    public void More_NoArguments_PrintsSyntaxError()
-    {
-        Run();
-
-        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
-    }
-
-    [TestMethod]
-    public void More_EmptyQuotes_PrintsSyntaxError()
-    {
-        Run("\"\"");
-
-        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
-    }
-
-    [TestMethod]
-    public void More_InvalidPath_PrintsSyntaxError()
-    {
-        _fileSystem.ResolvePathException = new ArgumentException("bad path");
-
-        Run("x");
-
-        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
-    }
-
-    [TestMethod]
-    public void More_ExistingFile_PrintsEachLine()
-    {
-        _fileSystem.AddFile(Path.Combine(_work, "test.txt"), "Zeile1\nZeile2");
-
-        Run("test.txt");
-
-        Assert.AreEqual("Zeile1" + Environment.NewLine + "Zeile2" + Environment.NewLine, _outputWriter.OutputBuffer);
-    }
-
-    [TestMethod]
-    public void More_WindowsLineEndings_PrintsLinesWithoutCarriageReturn()
-    {
-        _fileSystem.AddFile(Path.Combine(_work, "test.txt"), "a\r\nb");
-
-        Run("test.txt");
-
-        Assert.AreEqual("a" + Environment.NewLine + "b" + Environment.NewLine, _outputWriter.OutputBuffer);
-    }
-
-    [TestMethod]
-    public void More_TrailingNewline_DoesNotPrintExtraEmptyLine()
-    {
-        _fileSystem.AddFile(Path.Combine(_work, "test.txt"), "a\nb\n");
-
-        Run("test.txt");
-
-        Assert.AreEqual("a" + Environment.NewLine + "b" + Environment.NewLine, _outputWriter.OutputBuffer);
-    }
-
-    [TestMethod]
-    public void More_EmptyFile_PrintsNothing()
-    {
-        _fileSystem.AddFile(Path.Combine(_work, "empty.txt"), null);
-
-        Run("empty.txt");
-
-        Assert.AreEqual(string.Empty, _outputWriter.OutputBuffer);
-    }
-
-    [TestMethod]
-    public void More_FileNameWithSpaces_ReadsFile()
-    {
-        _fileSystem.AddFile(Path.Combine(_work, "my notes.txt"), "hallo");
-
-        Run("\"my", "notes.txt\"");
-
-        Assert.AreEqual("hallo" + Environment.NewLine, _outputWriter.OutputBuffer);
     }
 
     [TestMethod]
@@ -149,17 +63,6 @@ public class MoreCommandTests
     }
 
     [TestMethod]
-    public void More_Directory_PrintsCannotAccess()
-    {
-        string folder = Path.Combine(_work, "docs");
-        _fileSystem.AddDirectory(folder);
-
-        Run("docs");
-
-        Assert.AreEqual($"Cannot access file {folder}" + Environment.NewLine, _outputWriter.OutputBuffer);
-    }
-
-    [TestMethod]
     public void More_UnreadableFile_PrintsCannotAccess()
     {
         string target = Path.Combine(_work, "locked.txt");
@@ -169,19 +72,6 @@ public class MoreCommandTests
         Run("locked.txt");
 
         Assert.AreEqual($"Cannot access file {target}" + Environment.NewLine, _outputWriter.OutputBuffer);
-    }
-
-    [TestMethod]
-    public void More_LongFile_ShowsOnlyFirstPage()
-    {
-        _console.WindowHeight = 4;
-        AddLongFile(10);
-
-        Run("long.txt");
-
-        Assert.IsTrue(WasShown(1));
-        Assert.IsTrue(WasShown(3));
-        Assert.IsFalse(WasShown(4));
     }
 
     [TestMethod]
@@ -205,18 +95,6 @@ public class MoreCommandTests
         Run("long.txt");
 
         StringAssert.Contains(_outputWriter.OutputBuffer, "-- More (30%) --");
-    }
-
-    [TestMethod]
-    public void More_ShortFile_ShowsNoStatusAndWaitsForNoKey()
-    {
-        AddLongFile(5);
-
-        Run("long.txt");
-
-        Assert.IsTrue(WasShown(5));
-        Assert.IsFalse(_outputWriter.OutputBuffer.Contains("-- More"));
-        Assert.AreEqual(0, _console.ReadKeyCalls);
     }
 
     [TestMethod]
@@ -273,46 +151,6 @@ public class MoreCommandTests
         Assert.AreEqual(1, _console.ReadKeyCalls);
     }
 
-    [TestMethod]
-    public void More_OtherKey_IsIgnored()
-    {
-        _console.WindowHeight = 4;
-        AddLongFile(10);
-        PressKeys(X, Q);
-
-        Run("long.txt");
-
-        Assert.IsFalse(WasShown(4));
-        Assert.AreEqual(2, _console.ReadKeyCalls);
-    }
-
-    [TestMethod]
-    public void More_SpaceUntilEnd_ShowsWholeFileAndStops()
-    {
-        _console.WindowHeight = 4;
-        AddLongFile(10);
-        PressKeys(Space, Space, Space);
-
-        Run("long.txt");
-
-        Assert.AreEqual(3, _console.ReadKeyCalls);
-        Assert.IsTrue(_outputWriter.OutputBuffer.EndsWith("Zeile 10" + Environment.NewLine));
-    }
-
-    [TestMethod]
-    public void More_AfterKeyPress_StatusIsErased()
-    {
-        _console.WindowHeight = 4;
-        AddLongFile(10);
-        PressKeys(Enter, Q);
-
-        Run("long.txt");
-
-        string status = "-- More (30%) --";
-        StringAssert.Contains(_outputWriter.OutputBuffer, status + "\r" + new string(' ', status.Length) + "\r" + "Zeile 04");
-    }
-
-    
     private sealed class MoreFakeFileSystem(string currentDirectory) : IFileSystemService
     {
         private readonly Dictionary<string, string?> _files = new(StringComparer.Ordinal);

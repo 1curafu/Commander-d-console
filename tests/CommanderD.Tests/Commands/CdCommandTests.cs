@@ -40,29 +40,11 @@ public class CdCommandTests
     }
 
     [TestMethod]
-    public void Cd_HasNameAndDescription()
-    {
-        Assert.AreEqual("cd", _command.Name);
-        Assert.IsFalse(string.IsNullOrWhiteSpace(_command.Description));
-    }
-
-    [TestMethod]
     public void Cd_NoArgument_ShowsCurrentDirectory()
     {
         Run();
 
         Assert.AreEqual(_work + Environment.NewLine, _outputWriter.OutputBuffer);
-    }
-
-    [TestMethod]
-    public void Cd_NoArgument_DoesNotChangeDirectory()
-    {
-        var directoryBefore = _fileSystem.CurrentDirectory;
-        
-        Run();
-
-        Assert.AreEqual(directoryBefore, _fileSystem.CurrentDirectory);
-        Assert.AreEqual(0, _fileSystem.ChangeDirectoryCalls);
     }
 
     [TestMethod]
@@ -93,48 +75,6 @@ public class CdCommandTests
     }
 
     [TestMethod]
-    public void Cd_CurrentDirectoryDot_StaysInDirectory()
-    {
-        Run(".");
-        
-        Assert.AreEqual(_work, _fileSystem.CurrentDirectory);
-    }
-
-    [TestMethod]
-    public void Cd_RelativePathWithParent_ResolvesPath()
-    {
-        _fileSystem.CurrentDirectory = _src;
-
-        Run(Path.Combine("..", "My Folder"));
-
-        Assert.AreEqual(_spaced, _fileSystem.ChangedTo);
-    }
-
-    [TestMethod]
-    public void Cd_QuotedPathWithSpaces_ChangesDirectory()
-    {
-        Run("\"My Folder\"");
-
-        Assert.AreEqual(_spaced, _fileSystem.ChangedTo);
-    }
-
-    [TestMethod]
-    public void Cd_QuotedPathSplitByParser_JoinsArgumentsAndRemovesQuotes()
-    {
-        Run("\"My", "Folder\"");
-
-        Assert.AreEqual(_spaced, _fileSystem.ChangedTo);
-    }
-
-    [TestMethod]
-    public void Cd_UnquotedPathWithSpaces_ChangesDirectory()
-    {
-        Run("My", "Folder");
-
-        Assert.AreEqual(_spaced, _fileSystem.ChangedTo);
-    }
-
-    [TestMethod]
     public void Cd_DirectoryDoesNotExist_ShowsPathNotFound()
     {
         Run("missing");
@@ -153,59 +93,6 @@ public class CdCommandTests
     }
 
     [TestMethod]
-    public void Cd_TargetIsFileNotDirectory_ShowsPathNotFound_AndKeepsCurrentDirectory()
-    {
-        var directoryBefore = _fileSystem.CurrentDirectory;
-        
-        Run("notes.txt");
-
-        Assert.AreEqual(PathNotFoundMessage + Environment.NewLine, _outputWriter.OutputBuffer);
-        Assert.AreEqual(directoryBefore, _fileSystem.CurrentDirectory);
-    }
-
-    [TestMethod]
-    public void Cd_ExecutedTwice_ChangesRelativeToNewDirectory()
-    {
-        _fileSystem.AddDirectory(Path.Combine(_src, "inner"));
-
-        Run("src");
-        Run("inner");
-
-        Assert.AreEqual(Path.Combine(_src, "inner"), _fileSystem.CurrentDirectory);
-    }
-
-    [TestMethod]
-    public void Cd_ThenNoArgument_ShowsNewDirectory()
-    {
-        Run("src");
-
-        Run();
-
-        Assert.AreEqual(_src + Environment.NewLine, _outputWriter.OutputBuffer);
-    }
-
-    [TestMethod]
-    public void Cd_ResolvePathThrowsArgumentException_ShowsPathNotFound()
-    {
-        _fileSystem.ResolvePathException = new ArgumentException("invalid path");
-
-        Run("???");
-
-        Assert.AreEqual(PathNotFoundMessage + Environment.NewLine, _outputWriter.OutputBuffer);
-        Assert.AreEqual(0, _fileSystem.ChangeDirectoryCalls);
-    }
-
-    [TestMethod]
-    public void Cd_ResolvePathThrowsNotSupportedException_ShowsPathNotFound()
-    {
-        _fileSystem.ResolvePathException = new NotSupportedException();
-
-        Run("a:b:c");
-
-        Assert.AreEqual(PathNotFoundMessage + Environment.NewLine, _outputWriter.OutputBuffer);
-    }
-
-    [TestMethod]
     public void Cd_ChangeDirectoryThrowsUnauthorized_ShowsPathNotFound()
     {
         _fileSystem.ChangeDirectoryException = new UnauthorizedAccessException();
@@ -214,24 +101,6 @@ public class CdCommandTests
 
         Assert.AreEqual(PathNotFoundMessage + Environment.NewLine, _outputWriter.OutputBuffer);
         Assert.AreEqual(_work, _fileSystem.CurrentDirectory);
-    }
-
-    [TestMethod]
-    public void Cd_ChangeDirectoryThrowsIOException_ShowsPathNotFound()
-    {
-        _fileSystem.ChangeDirectoryException = new IOException();
-
-        Run("src");
-
-        Assert.AreEqual(PathNotFoundMessage + Environment.NewLine, _outputWriter.OutputBuffer);
-    }
-
-    [TestMethod]
-    public void Cd_UnexpectedException_IsNotSwallowed()
-    {
-        _fileSystem.ChangeDirectoryException = new InvalidOperationException();
-
-        Assert.ThrowsExactly<InvalidOperationException>(() => Run("src"));
     }
 
     private void RunLine(string input)

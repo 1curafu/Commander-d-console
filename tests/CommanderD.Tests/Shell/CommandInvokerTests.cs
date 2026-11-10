@@ -62,6 +62,6 @@ public class CommandInvokerTests
         var command = invoker.ExecuteCommand("ver");
 
         Assert.IsNotNull(command);
-        Assert.AreEqual(Environment.OSVersion + Environment.NewLine, writer.OutputBuffer);
+        StringAssert.StartsWith(writer.OutputBuffer, "Microsoft Windows [Version ");
     }
 }
