@@ -32,7 +32,6 @@ public class ConsoleService : IConsoleService
             }
             catch (IOException)
             {
-                // Kein echtes Konsolenfenster (z.B. umgeleitete Ausgabe)
                 return DefaultWindowHeight;
             }
         }
@@ -42,11 +41,9 @@ public class ConsoleService : IConsoleService
     {
         if (Console.IsInputRedirected)
         {
-            // Ohne Tastatur einfach weiterblättern
             return new ConsoleKeyInfo(' ', ConsoleKey.Spacebar, false, false, false);
         }
 
-        // Ctrl+C als Taste lesen, damit es nur MORE beendet und nicht die ganze Shell
         bool previous = Console.TreatControlCAsInput;
         Console.TreatControlCAsInput = true;
 
