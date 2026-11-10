@@ -20,7 +20,7 @@ public class FindCommand : Command
     {
         string name = string.Join(" ", context.Arguments).Trim().Trim('"');
 
-        if (StringIsNullOrWhiteSpace(name))
+        if (string.IsNullOrWhiteSpace(name))
         {
             OutputWriter.WriteLn("The syntax of the command is incorrect.");
             return;

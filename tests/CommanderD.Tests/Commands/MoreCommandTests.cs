@@ -371,5 +371,7 @@ public class MoreCommandTests
         public void DeleteFile(string path) => throw new NotSupportedException();
 
         public void Rename(string path, string newName) => throw new NotSupportedException();
+
+        public void Move(string source, string destination) => throw new NotSupportedException();
     }
 }

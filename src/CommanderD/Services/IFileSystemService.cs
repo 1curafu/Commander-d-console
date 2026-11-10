@@ -20,6 +20,9 @@ public interface IFileSystemService
 
     void Rename(string path, string newName);
 
+
+    void Move(string source, string destination);
+
     bool IsProtectedFile(string path);
 
     IReadOnlyList<DirectoryEntry> GetEntries(string path);

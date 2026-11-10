@@ -627,4 +627,135 @@ public class FileSystemServiceTests
         Assert.IsTrue(json.Contains("b.txt"));
         Assert.IsFalse(json.Contains("a.txt"));
     }
+
+    [TestMethod]
+    public void Move_FileIntoFolder_ChangesParentAndPath()
+    {
+        _service.CreateDirectory("docs");
+        var file = new FsFile("a.txt", @"C:\a.txt");
+        _context.CurrentFolder.AddChildItem(file);
+
+        _service.Move("a.txt", "docs");
+
+        Assert.IsFalse(_service.FileExists(@"C:\a.txt"));
+        Assert.IsTrue(_service.FileExists(@"C:\docs\a.txt"));
+        Assert.AreEqual(@"C:\docs\a.txt", file.Path);
+        Assert.AreEqual("a.txt", file.Name);
+    }
+
+    [TestMethod]
+    public void Move_FileToNewPath_UsesTheNewName()
+    {
+        _service.CreateDirectory("docs");
+        var file = new FsFile("a.txt", @"C:\a.txt");
+        _context.CurrentFolder.AddChildItem(file);
+
+        _service.Move("a.txt", @"docs\b.txt");
+
+        Assert.IsFalse(_service.FileExists(@"C:\a.txt"));
+        Assert.IsTrue(_service.FileExists(@"C:\docs\b.txt"));
+        Assert.AreEqual("b.txt", file.Name);
+        Assert.AreEqual(@"C:\docs\b.txt", file.Path);
+    }
+
+    [TestMethod]
+    public void Move_Directory_UpdatesPathsOfChildren()
+    {
+        _service.CreateDirectory(@"docs\sub");
+        _service.CreateDirectory("target");
+        var sub = (Folder)((Folder)_context.CurrentFolder.GetChildItems()[0]).GetChildItems()[0];
+        var file = new FsFile("a.txt", @"C:\docs\sub\a.txt");
+        sub.AddChildItem(file);
+
+        _service.Move("docs", "target");
+
+        Assert.IsFalse(_service.DirectoryExists(@"C:\docs"));
+        Assert.IsTrue(_service.DirectoryExists(@"C:\target\docs\sub"));
+        Assert.IsTrue(_service.FileExists(@"C:\target\docs\sub\a.txt"));
+        Assert.AreEqual(@"C:\target\docs\sub\a.txt", file.Path);
+    }
+
+    [TestMethod]
+    public void Move_TargetAlreadyExists_ThrowsIOExceptionAndMovesNothing()
+    {
+        _service.CreateDirectory("docs");
+        var docs = (Folder)_context.CurrentFolder.GetChildItems()[0];
+        docs.AddChildItem(new FsFile("a.txt", @"C:\docs\a.txt"));
+        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
+
+        Assert.ThrowsExactly<IOException>(() => _service.Move("a.txt", "docs"));
+
+        Assert.IsTrue(_service.FileExists(@"C:\a.txt"));
+        Assert.IsTrue(_service.FileExists(@"C:\docs\a.txt"));
+    }
+
+    [TestMethod]
+    public void Move_MissingSource_ThrowsFileNotFoundException()
+    {
+        _service.CreateDirectory("docs");
+
+        Assert.ThrowsExactly<FileNotFoundException>(() => _service.Move("gibtsnicht.txt", "docs"));
+    }
+
+    [TestMethod]
+    public void Move_ParentOfNewPathIsMissing_ThrowsDirectoryNotFoundException()
+    {
+        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
+
+        Assert.ThrowsExactly<DirectoryNotFoundException>(() => _service.Move("a.txt", @"nodir\b.txt"));
+        Assert.IsTrue(_service.FileExists(@"C:\a.txt"));
+    }
+
+    [TestMethod]
+    public void Move_InvalidNewName_ThrowsArgumentException()
+    {
+        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
+
+        Assert.ThrowsExactly<ArgumentException>(() => _service.Move("a.txt", "b?.txt"));
+        Assert.IsTrue(_service.FileExists(@"C:\a.txt"));
+    }
+
+    [TestMethod]
+    public void Move_DirectoryIntoItself_ThrowsUnauthorizedAccessException()
+    {
+        _service.CreateDirectory(@"docs\sub");
+
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() => _service.Move("docs", @"docs\sub"));
+        Assert.IsTrue(_service.DirectoryExists(@"C:\docs\sub"));
+    }
+
+    [TestMethod]
+    public void Move_CurrentDirectoryOrItsParent_ThrowsUnauthorizedAccessException()
+    {
+        _service.CreateDirectory(@"docs\sub");
+        _service.CreateDirectory("target");
+        _service.ChangeDirectory(@"docs\sub");
+
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() => _service.Move(@"C:\docs\sub", @"C:\target"));
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() => _service.Move(@"C:\docs", @"C:\target"));
+        Assert.IsTrue(_service.DirectoryExists(@"C:\docs\sub"));
+    }
+
+    [TestMethod]
+    public void Move_DirectoryToItsOwnParent_ChangesNothing()
+    {
+        _service.CreateDirectory(@"docs\sub");
+
+        _service.Move(@"docs\sub", "docs");
+
+        Assert.IsTrue(_service.DirectoryExists(@"C:\docs\sub"));
+    }
+
+    [TestMethod]
+    public void Move_WithSaveOnChange_SavesTheJsonFile()
+    {
+        var service = new FileSystemService(_context, saveOnChange: true);
+        service.CreateDirectory("docs");
+        _context.CurrentFolder.AddChildItem(new FsFile("a.txt", @"C:\a.txt"));
+        System.IO.File.Delete(_jsonPath);
+
+        service.Move("a.txt", "docs");
+
+        Assert.IsTrue(System.IO.File.Exists(_jsonPath));
+    }
 }

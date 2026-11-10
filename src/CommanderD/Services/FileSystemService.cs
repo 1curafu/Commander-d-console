@@ -235,6 +235,90 @@ public class FileSystemService : IFileSystemService
         }
     }
 
+    public void Move(string source, string destination)
+    {
+        ArgumentNullException.ThrowIfNull(destination);
+
+        (string sourceDrive, List<string> sourceSegments) = Split(ResolvePath(source));
+        Located? located = Locate(source);
+
+        if (sourceSegments.Count == 0 || located == null)
+        {
+            throw new FileNotFoundException($"The file '{source}' does not exist.");
+        }
+
+        if (ContainsCurrentDirectory(sourceDrive, sourceSegments))
+        {
+            throw new UnauthorizedAccessException($"'{source}' cannot be moved.");
+        }
+
+        string itemName = located.Segments[^1];
+        Located? destinationLocated = Locate(destination);
+        List<string> targetSegments;
+        string targetDrive;
+
+        if (destinationLocated?.Item is Folder)
+        {
+            targetDrive = destinationLocated.Drive;
+            targetSegments = new List<string>(destinationLocated.Segments) { itemName };
+        }
+        else
+        {
+            (targetDrive, targetSegments) = Split(ResolvePath(destination));
+        }
+
+        if (targetSegments.Count == 0)
+        {
+            throw new ArgumentException("The destination is not valid.", nameof(destination));
+        }
+
+        string newName = targetSegments[^1];
+
+        if (newName.IndexOfAny(InvalidNameCharacters) >= 0)
+        {
+            throw new ArgumentException($"The name '{newName}' is not valid.", nameof(destination));
+        }
+
+        bool sameDrive = string.Equals(sourceDrive, targetDrive, StringComparison.OrdinalIgnoreCase);
+
+        if (located.Item is Folder && sameDrive && StartsWith(targetSegments, sourceSegments))
+        {
+            if (targetSegments.Count == sourceSegments.Count)
+            {
+                return;
+            }
+
+            throw new UnauthorizedAccessException($"'{source}' cannot be moved into itself.");
+        }
+
+        Located? targetParent = Locate(Build(targetDrive, targetSegments.GetRange(0, targetSegments.Count - 1)));
+
+        if (targetParent?.Item is not Folder newParent)
+        {
+            throw new DirectoryNotFoundException($"The path '{destination}' does not exist.");
+        }
+
+        FileSystemItem? existing = FindChild(newParent, newName);
+
+        if (existing != null && !ReferenceEquals(existing, located.Item))
+        {
+            throw new IOException($"A duplicate file name exists: '{newName}'.");
+        }
+
+        var oldParent = (Folder)Locate(Build(sourceDrive, sourceSegments.GetRange(0, sourceSegments.Count - 1)))!.Item;
+        oldParent.RemoveChildItem(located.Item);
+        located.Item.Name = newName;
+        newParent.AddChildItem(located.Item);
+
+        var newSegments = new List<string>(targetParent.Segments) { newName };
+        UpdatePath(located.Item, Build(targetParent.Drive, newSegments));
+
+        if (_saveOnChange)
+        {
+            _context.Save();
+        }
+    }
+
     public bool IsProtectedFile(string path)
     {
         return false;
@@ -311,6 +395,24 @@ public class FileSystemService : IFileSystemService
         for (int i = 0; i < segments.Count; i++)
         {
             if (!string.Equals(segments[i], _currentSegments[i], StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool StartsWith(List<string> segments, List<string> prefix)
+    {
+        if (prefix.Count > segments.Count)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < prefix.Count; i++)
+        {
+            if (!string.Equals(segments[i], prefix[i], StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }

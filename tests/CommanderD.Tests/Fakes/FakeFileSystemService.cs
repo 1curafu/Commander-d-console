@@ -38,6 +38,10 @@ public class FakeFileSystemService : IFileSystemService
 
     public string? RenamedTo { get; private set; }
 
+    public Exception? MoveException { get; set; }
+
+    public int MoveCalls { get; private set; }
+
     private static readonly char[] InvalidRenameCharacters = ['\\', '/', ':'];
 
     public FakeFileSystemService(string currentDirectory)
@@ -168,6 +172,70 @@ public class FakeFileSystemService : IFileSystemService
         }
 
         RenamedTo = target;
+    }
+
+    public void Move(string source, string destination)
+    {
+        MoveCalls++;
+
+        if (MoveException != null)
+        {
+            throw MoveException;
+        }
+
+        bool isFile = files.Contains(source);
+
+        if (!isFile && !directories.Contains(source))
+        {
+            throw new FileNotFoundException(source);
+        }
+
+        string target = directories.Contains(destination)
+            ? Path.Combine(destination, Path.GetFileName(source))
+            : destination;
+
+        if (protectedFiles.Contains(source) || protectedFiles.Contains(target))
+        {
+            throw new UnauthorizedAccessException(target);
+        }
+
+        string? parent = Path.GetDirectoryName(target);
+
+        if (parent == null || !directories.Contains(parent))
+        {
+            throw new DirectoryNotFoundException(target);
+        }
+
+        if (files.Contains(target) || directories.Contains(target))
+        {
+            throw new IOException("A duplicate file name exists.");
+        }
+
+        if (isFile)
+        {
+            files.Remove(source);
+            files.Add(target);
+            return;
+        }
+
+        string prefix = source + Path.DirectorySeparatorChar;
+
+        if (target.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            throw new UnauthorizedAccessException(source);
+        }
+
+        foreach (string directory in directories.Where(d => d == source || d.StartsWith(prefix, StringComparison.Ordinal)).ToList())
+        {
+            directories.Remove(directory);
+            directories.Add(target + directory[source.Length..]);
+        }
+
+        foreach (string file in files.Where(f => f.StartsWith(prefix, StringComparison.Ordinal)).ToList())
+        {
+            files.Remove(file);
+            files.Add(target + file[source.Length..]);
+        }
     }
 
     public bool IsProtectedFile(string path)
