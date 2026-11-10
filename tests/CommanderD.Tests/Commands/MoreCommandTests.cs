@@ -375,6 +375,8 @@ public class MoreCommandTests
 
         public void CreateDirectory(string path) => throw new NotSupportedException();
 
+        public void CreateFile(string path, string content) => throw new NotSupportedException();
+
         public void DeleteFile(string path) => throw new NotSupportedException();
 
         public void Rename(string path, string newName) => throw new NotSupportedException();
