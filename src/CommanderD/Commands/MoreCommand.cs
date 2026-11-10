@@ -72,7 +72,7 @@ public class MoreCommand : Command
 
     private void ShowPaged(string[] lines)
     {
-        // Eine Zeile frei lassen für die "-- More --" Anzeige
+       
         int pageSize = Math.Max(1, _consoleService.WindowHeight - 1);
         int shown = ShowLines(lines, 0, pageSize);
 
@@ -83,7 +83,7 @@ public class MoreCommand : Command
 
             ConsoleKeyInfo key = _consoleService.ReadKey();
 
-            // Statuszeile wieder löschen
+            
             OutputWriter.Write("\r" + new string(' ', status.Length) + "\r");
 
             if (IsQuit(key))
@@ -129,7 +129,7 @@ public class MoreCommand : Command
 
         string[] lines = content.Replace("\r\n", "\n").Split('\n');
 
-        // Ein abschliessender Zeilenumbruch erzeugt keine leere Extrazeile
+      
         return lines[^1].Length == 0 ? lines[..^1] : lines;
     }
 }
