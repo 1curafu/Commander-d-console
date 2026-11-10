@@ -43,7 +43,7 @@ public class MoreCommandTests
         _command.Execute(new CommandContext("more", arguments));
     }
 
-    /// <summary>Creates long.txt with lines "Zeile 01" ... "Zeile NN".</summary>
+    
     private void AddLongFile(int lineCount)
     {
         string content = string.Join("\n", Enumerable.Range(1, lineCount).Select(i => $"Zeile {i:D2}"));
@@ -312,10 +312,7 @@ public class MoreCommandTests
         StringAssert.Contains(_outputWriter.OutputBuffer, status + "\r" + new string(' ', status.Length) + "\r" + "Zeile 04");
     }
 
-    /// <summary>
-    /// Small file system for MORE tests. Unlike the shared FakeFileSystemService it stores file contents
-    /// and returns them through GetEntries, which is how MORE reads a file.
-    /// </summary>
+    
     private sealed class MoreFakeFileSystem(string currentDirectory) : IFileSystemService
     {
         private readonly Dictionary<string, string?> _files = new(StringComparer.Ordinal);
