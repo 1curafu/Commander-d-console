@@ -176,7 +176,7 @@ public class DirCommandTests
     [DataRow("ja-JP", "2026/10/29  14:10")]
     public void Execute_DifferentRegionalSettings_UsesRegionalDateTimeFormat(string culture, string expected)
     {
-        // useUserOverride: false, damit eigene Windows-Einstellungen den Test nicht beeinflussen
+      
         CultureInfo.CurrentCulture = new CultureInfo(culture, false);
         var date = new DateTime(2026, 10, 29, 14, 10, 0);
         _context.CurrentFolder.AddChildItem(new FsFile("test.txt", @"C:\test.txt") { Content = "Hallo", CreatedOn = date });
