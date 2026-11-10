@@ -44,4 +44,15 @@ public class CommandInvokerTests
         Assert.IsNull(command);
     }
 
+    [TestMethod]
+    public void Constructor_OnlyOutputWriter_UsesDefaultFactoryAndParser()
+    {
+        var writer = new TestOutputWriter();
+        var invoker = new CommandInvoker(writer);
+
+        var command = invoker.ExecuteCommand("ver");
+
+        Assert.IsNotNull(command);
+        StringAssert.StartsWith(writer.OutputBuffer, "Microsoft Windows [Version ");
+    }
 }

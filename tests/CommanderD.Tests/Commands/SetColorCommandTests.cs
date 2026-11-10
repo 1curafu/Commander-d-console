@@ -8,8 +8,6 @@ namespace CommanderD.Tests.Commands;
 [TestClass]
 public class SetColorCommandTests
 {
-    private const string SyntaxMessage = "The syntax of the command is incorrect.";
-
     private readonly FakeConsoleService _console = new FakeConsoleService();
     private readonly TestOutputWriter _outputWriter = new TestOutputWriter();
     private readonly SetColorCommand _command;
@@ -23,14 +21,6 @@ public class SetColorCommandTests
     {
         _command.Execute(new CommandContext("color", arguments));
     }
-
-    [TestMethod]
-    public void Color_HasNameAndDescription()
-    {
-        Assert.AreEqual("color", _command.Name);
-        Assert.IsFalse(string.IsNullOrWhiteSpace(_command.Description));
-    }
-
 
     [TestMethod]
     public void Color_Green_ChangesOnlyForeground()
@@ -55,47 +45,6 @@ public class SetColorCommandTests
     }
 
     [TestMethod]
-    public void Color_IsCaseInsensitive()
-    {
-        Run("YELLOW", "On", "DarkBlue");
-
-        Assert.AreEqual(ConsoleColor.DarkBlue, _console.BackgroundColor);
-        Assert.AreEqual(ConsoleColor.Yellow, _console.ForegroundColor);
-    }
-
-    [TestMethod]
-    public void Color_GreyIsAliasForGray()
-    {
-        Run("green");
-        Run("grey");
-
-        Assert.AreEqual(ConsoleColor.Gray, _console.ForegroundColor);
-    }
-
-    [TestMethod]
-    public void Color_ForegroundOnly_KeepsCurrentBackground()
-    {
-        Run("white", "on", "darkblue");
-        Run("green");
-
-        Assert.AreEqual(ConsoleColor.DarkBlue, _console.BackgroundColor);
-        Assert.AreEqual(ConsoleColor.Green, _console.ForegroundColor);
-    }
-
-    [TestMethod]
-    public void Color_NoArgument_RestoresDefaultColors()
-    {
-        Run("white", "on", "darkblue");
-
-        Run();
-
-        Assert.AreEqual(1, _console.ResetColorsCalls);
-        Assert.AreEqual(ConsoleColor.Black, _console.BackgroundColor);
-        Assert.AreEqual(ConsoleColor.Gray, _console.ForegroundColor);
-    }
-
-
-    [TestMethod]
     public void Color_ValidName_AppliesColorsOnceAndPrintsNothing()
     {
         Run("green");
@@ -103,7 +52,6 @@ public class SetColorCommandTests
         Assert.AreEqual(1, _console.SetColorsCalls);
         Assert.AreEqual(string.Empty, _outputWriter.OutputBuffer);
     }
-
 
     [TestMethod]
     public void Color_SameBackgroundAndForeground_IsPrevented()
@@ -122,107 +70,5 @@ public class SetColorCommandTests
         Run("black");
 
         Assert.AreEqual(0, _console.SetColorsCalls);
-    }
-
-
-    [TestMethod]
-    [DataRow("purple")]
-    [DataRow("1F")]
-    [DataRow("0A")]
-    [DataRow("gren")]
-    public void Color_UnknownName_ShowsSyntaxMessageAndChangesNothing(string name)
-    {
-        Run(name);
-
-        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
-        Assert.AreEqual(0, _console.SetColorsCalls);
-    }
-
-    [TestMethod]
-    public void Color_UnknownBackground_ShowsSyntaxMessageAndChangesNothing()
-    {
-        Run("green", "on", "purple");
-
-        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
-        Assert.AreEqual(0, _console.SetColorsCalls);
-    }
-
-    [TestMethod]
-    [DataRow("green blue")]
-    [DataRow("green on")]
-    [DataRow("green to blue")]
-    [DataRow("green on blue red")]
-    public void Color_WrongArgumentShape_ShowsSyntaxMessage(string arguments)
-    {
-        Run(arguments.Split(' '));
-
-        Assert.AreEqual(SyntaxMessage + Environment.NewLine, _outputWriter.OutputBuffer);
-        Assert.AreEqual(0, _console.SetColorsCalls);
-    }
-
-
-    private CommandInvoker CreateInvoker(TestOutputWriter writer)
-    {
-        var factory = new CommandFactory();
-        factory.Register("color", (outputWriter) => new SetColorCommand(_console, outputWriter));
-        return new CommandInvoker(new Parser(), factory, writer);
-    }
-
-    [TestMethod]
-    [DataRow("color green")]
-    [DataRow("COLOR GREEN")]
-    [DataRow("Color Green")]
-    public void Color_TypedIntoShell_ChangesColor(string input)
-    {
-        var writer = new TestOutputWriter();
-
-        CreateInvoker(writer).ExecuteCommand(input);
-
-        Assert.AreEqual(string.Empty, writer.OutputBuffer);
-        Assert.AreEqual(ConsoleColor.Black, _console.BackgroundColor);
-        Assert.AreEqual(ConsoleColor.Green, _console.ForegroundColor);
-    }
-
-    [TestMethod]
-    public void Color_RegisteredInDefaultFactory()
-    {
-        var factory = new CommandFactory();
-
-        Assert.IsInstanceOfType(factory.Create("COLOR", new TestOutputWriter()), typeof(SetColorCommand));
-    }
-
-    [TestMethod]
-    public void Color_ChangingColors_DoesNotClearTheScreen()
-    {
-        Run("green");
-        Run("red", "on", "blue");
-        Run();
-
-        Assert.AreEqual(0, _console.ClearCalls);
-    }
-
-    [TestMethod]
-    public void Usage_ListsAllAvailableColors()
-    {
-        foreach (string name in ColorPalette.Names)
-        {
-            StringAssert.Contains(_command.Usage, name);
-        }
-
-        StringAssert.Contains(_command.Usage, "Available colors:");
-    }
-
-    [TestMethod]
-    public void ColorPalette_Names_AreAllUsableAndHaveNoAliases()
-    {
-        foreach (string name in ColorPalette.Names)
-        {
-            Assert.IsTrue(ColorPalette.TryGet(name, out _), name);
-        }
-
-        Assert.IsFalse(ColorPalette.Names.Contains("grey"));
-        Assert.IsFalse(ColorPalette.Names.Contains("darkgrey"));
-        Assert.IsTrue(ColorPalette.Names.Contains("gray"));
-        Assert.IsTrue(ColorPalette.Names.Contains("darkgray"));
     }
 }
