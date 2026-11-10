@@ -11,4 +11,8 @@ public interface IConsoleService
     void ResetColors();
 
     void Clear();
+
+    int WindowHeight { get; }
+
+    ConsoleKeyInfo ReadKey();
 }

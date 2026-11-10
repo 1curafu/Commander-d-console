@@ -32,4 +32,17 @@ public class FakeConsoleService : IConsoleService
     {
         ClearCalls++;
     }
+
+    public int WindowHeight { get; set; } = 25;
+
+    public Queue<ConsoleKeyInfo> Keys { get; } = new();
+
+    public int ReadKeyCalls { get; private set; }
+
+    /// <summary>Returns the next queued key. When none are left, Q is returned so a test can never hang.</summary>
+    public ConsoleKeyInfo ReadKey()
+    {
+        ReadKeyCalls++;
+        return Keys.Count > 0 ? Keys.Dequeue() : new ConsoleKeyInfo('q', ConsoleKey.Q, false, false, false);
+    }
 }

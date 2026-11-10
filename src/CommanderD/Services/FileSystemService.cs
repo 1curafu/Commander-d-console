@@ -132,6 +132,49 @@ public class FileSystemService : IFileSystemService
         }
     }
 
+    public void CreateFile(string path, string content)
+    {
+        (string driveName, List<string> segments) = Split(ResolvePath(path));
+
+        if (segments.Count == 0)
+        {
+            throw new ArgumentException($"'{path}' is not a valid file name.", nameof(path));
+        }
+
+        string name = segments[^1];
+
+        if (name.IndexOfAny(InvalidNameCharacters) >= 0)
+        {
+            throw new ArgumentException($"The name '{name}' is not valid.", nameof(path));
+        }
+
+        if (FindDrive(driveName) == null)
+        {
+            throw new DirectoryNotFoundException($"The drive '{driveName}:' does not exist.");
+        }
+
+        string parentPath = Build(driveName, segments.GetRange(0, segments.Count - 1));
+        Located? parent = Locate(parentPath);
+
+        if (parent?.Item is not Folder folder)
+        {
+            throw new DirectoryNotFoundException($"The directory '{parentPath}' does not exist.");
+        }
+
+        if (FindChild(folder, name) != null)
+        {
+            throw new IOException($"A subdirectory or file '{name}' already exists.");
+        }
+
+        List<string> fileSegments = new List<string>(parent.Segments) { name };
+        folder.AddChildItem(new FsFile(name, Build(parent.Drive, fileSegments)) { Content = content });
+
+        if (_saveOnChange)
+        {
+            _context.Save();
+        }
+    }
+
     public void DeleteFile(string path)
     {
         (string driveName, List<string> segments) = Split(ResolvePath(path));

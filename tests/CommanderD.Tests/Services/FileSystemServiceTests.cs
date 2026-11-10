@@ -101,6 +101,231 @@ public class FileSystemServiceTests
         Assert.IsFalse(Directory.Exists(Path.Combine(Path.GetTempPath(), name)));
     }
 
+
+    [TestMethod]
+    public void CreateFile_NewFile_ExistsAndIsListedInContext()
+    {
+        _service.CreateFile("notes.txt", string.Empty);
+
+        Assert.IsTrue(_service.FileExists(@"C:\notes.txt"));
+        Assert.IsFalse(_service.DirectoryExists(@"C:\notes.txt"));
+        Assert.HasCount(1, _context.Drives[0].RootFolder.GetChildItems());
+        Assert.IsInstanceOfType(_context.Drives[0].RootFolder.GetChildItems()[0], typeof(FsFile));
+    }
+
+    [TestMethod]
+    public void CreateFile_EmptyContent_IsEmpty()
+    {
+        _service.CreateFile("notes.txt", string.Empty);
+
+        DirectoryEntry entry = _service.GetEntries("notes.txt")[0];
+        Assert.AreEqual(string.Empty, entry.Content);
+        Assert.AreEqual(0, entry.Size);
+        Assert.IsFalse(entry.IsDirectory);
+    }
+
+    [TestMethod]
+    public void CreateFile_WithContent_StoresContent()
+    {
+        _service.CreateFile("notes.txt", "Hello World");
+
+        DirectoryEntry entry = _service.GetEntries("notes.txt")[0];
+        Assert.AreEqual("Hello World", entry.Content);
+        Assert.AreEqual(11, entry.Size);
+    }
+
+    [TestMethod]
+    public void CreateFile_MultilineContent_StoresItUnchanged()
+    {
+        string content = "line 1\r\nline 2\r\n\r\nline 4";
+
+        _service.CreateFile("notes.txt", content);
+
+        Assert.AreEqual(content, _service.GetEntries("notes.txt")[0].Content);
+    }
+
+    [TestMethod]
+    public void CreateFile_ContentWithUmlauts_SizeIsUtf8Bytes()
+    {
+        _service.CreateFile("notes.txt", "Grüezi");
+
+        Assert.AreEqual(7, _service.GetEntries("notes.txt")[0].Size);
+    }
+
+    [TestMethod]
+    public void CreateFile_TwoFiles_KeepTheirOwnContent()
+    {
+        _service.CreateFile("a.txt", "content of a");
+        _service.CreateFile("b.txt", "content of b");
+
+        Assert.AreEqual("content of a", _service.GetEntries("a.txt")[0].Content);
+        Assert.AreEqual("content of b", _service.GetEntries("b.txt")[0].Content);
+    }
+
+    [TestMethod]
+    public void CreateFile_InExistingSubfolder_CreatesFileThere()
+    {
+        _service.CreateDirectory("docs");
+
+        _service.CreateFile(@"docs\notes.txt", string.Empty);
+
+        Assert.IsTrue(_service.FileExists(@"C:\docs\notes.txt"));
+        Assert.IsFalse(_service.FileExists(@"C:\notes.txt"));
+    }
+
+    [TestMethod]
+    public void CreateFile_AbsolutePath_CreatesFileThere()
+    {
+        _service.CreateDirectory(@"docs\work");
+        _service.ChangeDirectory("docs");
+
+        _service.CreateFile(@"C:\docs\work\notes.txt", string.Empty);
+
+        Assert.IsTrue(_service.FileExists(@"C:\docs\work\notes.txt"));
+    }
+
+    [TestMethod]
+    public void CreateFile_RelativePath_UsesCurrentDirectory()
+    {
+        _service.CreateDirectory("docs");
+        _service.ChangeDirectory("docs");
+
+        _service.CreateFile("notes.txt", string.Empty);
+
+        Assert.IsTrue(_service.FileExists(@"C:\docs\notes.txt"));
+        Assert.IsFalse(_service.FileExists(@"C:\notes.txt"));
+    }
+
+    [TestMethod]
+    public void CreateFile_PathUsesCaseOfTheExistingFolder()
+    {
+        _service.CreateDirectory("Docs");
+
+        _service.CreateFile(@"DOCS\notes.txt", string.Empty);
+
+        var docs = (Folder)_context.Drives[0].RootFolder.GetChildItems()[0];
+        var file = (FsFile)docs.GetChildItems()[0];
+        Assert.AreEqual("notes.txt", file.Name);
+        Assert.AreEqual(@"C:\Docs\notes.txt", file.Path);
+    }
+
+    [TestMethod]
+    public void CreateFile_NameIsNotCaseSensitive()
+    {
+        _service.CreateFile("Notes.txt", string.Empty);
+
+        Assert.IsTrue(_service.FileExists("notes.txt"));
+        Assert.IsTrue(_service.FileExists("NOTES.TXT"));
+    }
+
+    [TestMethod]
+    public void CreateFile_ExistingFile_ThrowsIOExceptionAndKeepsContent()
+    {
+        _context.CurrentFolder.AddChildItem(new FsFile("notes.txt", @"C:\notes.txt") { Content = "keep me" });
+
+        Assert.ThrowsExactly<IOException>(() => _service.CreateFile("NOTES.TXT", "new content"));
+
+        Assert.HasCount(1, _context.CurrentFolder.GetChildItems());
+        Assert.AreEqual("keep me", _service.GetEntries("notes.txt")[0].Content);
+    }
+
+    [TestMethod]
+    public void CreateFile_NameOfExistingFolder_ThrowsIOException()
+    {
+        _service.CreateDirectory("docs");
+
+        Assert.ThrowsExactly<IOException>(() => _service.CreateFile("docs", string.Empty));
+        Assert.IsTrue(_service.DirectoryExists("docs"));
+    }
+
+    [TestMethod]
+    public void CreateFile_MissingFolder_ThrowsDirectoryNotFoundExceptionAndCreatesNothing()
+    {
+        Assert.ThrowsExactly<DirectoryNotFoundException>(() => _service.CreateFile(@"gibtsnicht\notes.txt", string.Empty));
+
+        Assert.IsFalse(_service.DirectoryExists("gibtsnicht"));
+        Assert.HasCount(0, _context.Drives[0].RootFolder.GetChildItems());
+    }
+
+    [TestMethod]
+    public void CreateFile_ParentIsAFile_ThrowsDirectoryNotFoundException()
+    {
+        _service.CreateFile("notes.txt", string.Empty);
+
+        Assert.ThrowsExactly<DirectoryNotFoundException>(() => _service.CreateFile(@"notes.txt\other.txt", string.Empty));
+    }
+
+    [TestMethod]
+    public void CreateFile_UnknownDrive_ThrowsDirectoryNotFoundException()
+    {
+        Assert.ThrowsExactly<DirectoryNotFoundException>(() => _service.CreateFile(@"Z:\notes.txt", string.Empty));
+    }
+
+    [TestMethod]
+    public void CreateFile_InvalidName_ThrowsArgumentException()
+    {
+        Assert.ThrowsExactly<ArgumentException>(() => _service.CreateFile("a*b.txt", string.Empty));
+        Assert.ThrowsExactly<ArgumentException>(() => _service.CreateFile("a|b.txt", string.Empty));
+        Assert.ThrowsExactly<ArgumentException>(() => _service.CreateFile("a?.txt", string.Empty));
+    }
+
+    [TestMethod]
+    [DataRow(@"C:\")]
+    [DataRow(@"\")]
+    [DataRow("..")]
+    public void CreateFile_PathWithoutFileName_ThrowsArgumentException(string path)
+    {
+        Assert.ThrowsExactly<ArgumentException>(() => _service.CreateFile(path, string.Empty));
+    }
+
+    [TestMethod]
+    public void CreateFile_NeverCreatesAFileOnTheRealDisk()
+    {
+        string name = "commanderd-virtual-" + Guid.NewGuid() + ".txt";
+
+        _service.CreateFile(name, string.Empty);
+
+        Assert.IsTrue(_service.FileExists(name));
+        Assert.IsFalse(System.IO.File.Exists(Path.Combine(Directory.GetCurrentDirectory(), name)));
+        Assert.IsFalse(System.IO.File.Exists(Path.Combine(Path.GetTempPath(), name)));
+    }
+
+    [TestMethod]
+    public void CreateFile_WithSaveOnChange_WritesJsonFile()
+    {
+        var service = new FileSystemService(_context, saveOnChange: true);
+
+        service.CreateFile("notes.txt", "saved content");
+
+        Assert.IsTrue(System.IO.File.Exists(_jsonPath));
+        string json = System.IO.File.ReadAllText(_jsonPath);
+        StringAssert.Contains(json, "notes.txt");
+        StringAssert.Contains(json, "saved content");
+    }
+
+    [TestMethod]
+    public void CreateFile_WithoutSaveOnChange_WritesNothing()
+    {
+        _service.CreateFile("notes.txt", string.Empty);
+
+        Assert.IsFalse(System.IO.File.Exists(_jsonPath));
+    }
+
+    [TestMethod]
+    public void SavedFiles_AreAvailableAfterRestart()
+    {
+        var service = new FileSystemService(_context, saveOnChange: true);
+        service.CreateDirectory("docs");
+        service.CreateFile(@"docs\notes.txt", "still here");
+
+        var restartedContext = new ShellContext(new PersistenceService(_jsonPath));
+        restartedContext.Load();
+        var restarted = new FileSystemService(restartedContext);
+
+        Assert.IsTrue(restarted.FileExists(@"C:\docs\notes.txt"));
+        Assert.AreEqual("still here", restarted.GetEntries(@"C:\docs\notes.txt")[0].Content);
+    }
+
     [TestMethod]
     public void ChangeDirectory_ExistingFolder_ChangesCurrentDirectoryAndContext()
     {

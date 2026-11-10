@@ -1,6 +1,7 @@
 using CommanderD.Commands;
 using CommanderD.Services;
 using CommanderD.Shell;
+using CommanderD.Tests.Fakes;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CommanderD.Tests.Commands;
@@ -19,31 +20,21 @@ public class MoreCommandTests
     private readonly string _work = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "commanderd-more-tests", "work"));
     private readonly MoreFakeFileSystem _fileSystem;
     private readonly TestOutputWriter _outputWriter;
-    private readonly Queue<ConsoleKeyInfo> _keys = new();
+    private readonly FakeConsoleService _console = new();
     private readonly MoreCommand _command;
-
-    private int _windowHeight = 25;
-    private int _readKeyCalls;
 
     public MoreCommandTests()
     {
         _fileSystem = new MoreFakeFileSystem(_work);
         _outputWriter = new TestOutputWriter();
-        _command = new MoreCommand(_fileSystem, _outputWriter, () => _windowHeight, ReadKey);
-    }
-
-    /// <summary>Returns the next queued key. When none are left, Q is returned so a test can never hang.</summary>
-    private ConsoleKeyInfo ReadKey()
-    {
-        _readKeyCalls++;
-        return _keys.Count > 0 ? _keys.Dequeue() : Q;
+        _command = new MoreCommand(_fileSystem, _console, _outputWriter);
     }
 
     private void PressKeys(params ConsoleKeyInfo[] keys)
     {
         foreach (ConsoleKeyInfo key in keys)
         {
-            _keys.Enqueue(key);
+            _console.Keys.Enqueue(key);
         }
     }
 
@@ -183,7 +174,7 @@ public class MoreCommandTests
     [TestMethod]
     public void More_LongFile_ShowsOnlyFirstPage()
     {
-        _windowHeight = 4;
+        _console.WindowHeight = 4;
         AddLongFile(10);
 
         Run("long.txt");
@@ -196,7 +187,7 @@ public class MoreCommandTests
     [TestMethod]
     public void More_LongFile_FirstPageFillsWindowHeightMinusStatusRow()
     {
-        _windowHeight = 6;
+        _console.WindowHeight = 6;
         AddLongFile(20);
 
         Run("long.txt");
@@ -208,7 +199,7 @@ public class MoreCommandTests
     [TestMethod]
     public void More_LongFile_ShowsStatusWithPercentage()
     {
-        _windowHeight = 4;
+        _console.WindowHeight = 4;
         AddLongFile(10);
 
         Run("long.txt");
@@ -225,13 +216,13 @@ public class MoreCommandTests
 
         Assert.IsTrue(WasShown(5));
         Assert.IsFalse(_outputWriter.OutputBuffer.Contains("-- More"));
-        Assert.AreEqual(0, _readKeyCalls);
+        Assert.AreEqual(0, _console.ReadKeyCalls);
     }
 
     [TestMethod]
     public void More_Space_AdvancesOnePage()
     {
-        _windowHeight = 4;
+        _console.WindowHeight = 4;
         AddLongFile(10);
         PressKeys(Space, Q);
 
@@ -245,7 +236,7 @@ public class MoreCommandTests
     [TestMethod]
     public void More_Enter_AdvancesOneLine()
     {
-        _windowHeight = 4;
+        _console.WindowHeight = 4;
         AddLongFile(10);
         PressKeys(Enter, Q);
 
@@ -259,59 +250,59 @@ public class MoreCommandTests
     [TestMethod]
     public void More_Q_EndsCommand()
     {
-        _windowHeight = 4;
+        _console.WindowHeight = 4;
         AddLongFile(10);
         PressKeys(Q, Space);
 
         Run("long.txt");
 
         Assert.IsFalse(WasShown(4));
-        Assert.AreEqual(1, _readKeyCalls);
+        Assert.AreEqual(1, _console.ReadKeyCalls);
     }
 
     [TestMethod]
     public void More_CtrlC_EndsCommand()
     {
-        _windowHeight = 4;
+        _console.WindowHeight = 4;
         AddLongFile(10);
         PressKeys(CtrlC, Space);
 
         Run("long.txt");
 
         Assert.IsFalse(WasShown(4));
-        Assert.AreEqual(1, _readKeyCalls);
+        Assert.AreEqual(1, _console.ReadKeyCalls);
     }
 
     [TestMethod]
     public void More_OtherKey_IsIgnored()
     {
-        _windowHeight = 4;
+        _console.WindowHeight = 4;
         AddLongFile(10);
         PressKeys(X, Q);
 
         Run("long.txt");
 
         Assert.IsFalse(WasShown(4));
-        Assert.AreEqual(2, _readKeyCalls);
+        Assert.AreEqual(2, _console.ReadKeyCalls);
     }
 
     [TestMethod]
     public void More_SpaceUntilEnd_ShowsWholeFileAndStops()
     {
-        _windowHeight = 4;
+        _console.WindowHeight = 4;
         AddLongFile(10);
         PressKeys(Space, Space, Space);
 
         Run("long.txt");
 
-        Assert.AreEqual(3, _readKeyCalls);
+        Assert.AreEqual(3, _console.ReadKeyCalls);
         Assert.IsTrue(_outputWriter.OutputBuffer.EndsWith("Zeile 10" + Environment.NewLine));
     }
 
     [TestMethod]
     public void More_AfterKeyPress_StatusIsErased()
     {
-        _windowHeight = 4;
+        _console.WindowHeight = 4;
         AddLongFile(10);
         PressKeys(Enter, Q);
 
@@ -374,6 +365,8 @@ public class MoreCommandTests
         public void ChangeDirectory(string path) => throw new NotSupportedException();
 
         public void CreateDirectory(string path) => throw new NotSupportedException();
+
+        public void CreateFile(string path, string content) => throw new NotSupportedException();
 
         public void DeleteFile(string path) => throw new NotSupportedException();
 
