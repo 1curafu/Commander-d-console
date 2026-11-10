@@ -194,6 +194,7 @@ public class HelpCommandTests
     [DataRow("type", "TYPE <file>")]
     [DataRow("ren", "REN <name> <new name>")]
     [DataRow("rename", "REN <name> <new name>")]
+    [DataRow("move", "MOVE <source>[,<source>...] <destination>")]
     [DataRow("more", "MORE <file>")]
     public void Help_WithFileCommands_ShowsDescriptionAndUsage(string name, string usage)
     {
