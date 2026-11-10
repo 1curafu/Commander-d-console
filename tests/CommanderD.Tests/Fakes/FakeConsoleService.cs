@@ -39,7 +39,6 @@ public class FakeConsoleService : IConsoleService
 
     public int ReadKeyCalls { get; private set; }
 
-    /// <summary>Returns the next queued key. When none are left, Q is returned so a test can never hang.</summary>
     public ConsoleKeyInfo ReadKey()
     {
         ReadKeyCalls++;
