@@ -20,7 +20,7 @@ public class FindCommand : Command
     {
         string name = string.Join(" ", context.Arguments).Trim().Trim('"');
 
-        if (string.IsNullOrWhiteSpace(name))
+        if (StringIsNullOrWhiteSpace(name))
         {
             OutputWriter.WriteLn("The syntax of the command is incorrect.");
             return;
@@ -36,6 +36,8 @@ public class FindCommand : Command
                 OutputWriter.WriteLn($"File not found - {name}");
                 return;
             }
+
+           
 
             var output = new StringBuilder();
             foreach (string match in matches)
