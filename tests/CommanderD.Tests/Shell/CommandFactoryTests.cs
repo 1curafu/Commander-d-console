@@ -47,4 +47,35 @@ public class CommandFactoryTests
     {
         Assert.IsTrue(CreateFactory().GetCommands().Contains("fake"));
     }
+
+    // Moved here from the command test classes (CD-15: every registered name creates the right command).
+    [TestMethod]
+    [DataRow("EXIT", typeof(ExitCommand))]
+    [DataRow("CD", typeof(CdCommand))]
+    [DataRow("VER", typeof(VersionCommand))]
+    [DataRow("MKDIR", typeof(MkDirCommand))]
+    [DataRow("MD", typeof(MkDirCommand))]
+    [DataRow("MKFILE", typeof(MkFileCommand))]
+    [DataRow("MF", typeof(MkFileCommand))]
+    [DataRow("DIR", typeof(DirCommand))]
+    [DataRow("DEL", typeof(DelCommand))]
+    [DataRow("DELETE", typeof(DelCommand))]
+    [DataRow("COLOR", typeof(SetColorCommand))]
+    [DataRow("CLS", typeof(ClsCommand))]
+    [DataRow("CLEAR", typeof(ClsCommand))]
+    [DataRow("HELP", typeof(HelpCommand))]
+    [DataRow("TYPE", typeof(TypeCommand))]
+    [DataRow("REN", typeof(RenCommand))]
+    [DataRow("RENAME", typeof(RenCommand))]
+    [DataRow("MORE", typeof(MoreCommand))]
+    [DataRow("FIND", typeof(FindCommand))]
+    [DataRow("MOVE", typeof(MoveCommand))]
+    public void Create_EveryRegisteredName_ReturnsTheRightCommand(string name, Type expectedType)
+    {
+        var factory = new CommandFactory(new FakeFileSystemService(@"C:\"), new FakeConsoleService());
+
+        Command? command = factory.Create(name, _outputWriter);
+
+        Assert.IsInstanceOfType(command, expectedType);
+    }
 }
