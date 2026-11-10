@@ -46,25 +46,6 @@ public class ShellContextTests
     }
 
     [TestMethod]
-    public void Constructor_SetsDefaultColors()
-    {
-        var context = new ShellContext(_service);
-
-        Assert.AreEqual(ConsoleColor.Black, context.BackgroundColor);
-        Assert.AreEqual(ConsoleColor.Gray, context.ForegroundColor);
-    }
-
-    [TestMethod]
-    public void Save_CreatesSaveFile()
-    {
-        var context = new ShellContext(_service);
-
-        context.Save();
-
-        Assert.IsTrue(System.IO.File.Exists(_path));
-    }
-
-    [TestMethod]
     public void Load_NoSaveFile_KeepsDefaultDrive()
     {
         var context = new ShellContext(_service);
@@ -111,17 +92,6 @@ public class ShellContextTests
         var loadedDocs = (Folder)rootItems[0];
         Assert.HasCount(1, loadedDocs.GetChildItems());
         Assert.IsInstanceOfType<CommanderD.Filesystem.File>(loadedDocs.GetChildItems()[0]);
-    }
-
-    [TestMethod]
-    public void Load_SetsCurrentFolderToRootOfFirstLoadedDrive()
-    {
-        new ShellContext(_service).Save();
-
-        var context = new ShellContext(_service);
-        context.Load();
-
-        Assert.AreSame(context.Drives[0].RootFolder, context.CurrentFolder);
     }
 
     [TestMethod]

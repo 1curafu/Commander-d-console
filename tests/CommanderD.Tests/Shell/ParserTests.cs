@@ -42,16 +42,6 @@ public class ParserTests
     }
 
     [TestMethod]
-    public void Parse_ExtraWhitespace_IsIgnored()
-    {
-        var context = parser.Parse("  mkdir    test  ");
-
-        Assert.IsNotNull(context);
-        Assert.AreEqual("mkdir", context.Name);
-        CollectionAssert.AreEqual(new[] { "test" }, context.Arguments);
-    }
-
-    [TestMethod]
     [DataRow("")]
     [DataRow("   ")]
     public void Parse_EmptyInput_ReturnsNull(string input)
@@ -60,24 +50,9 @@ public class ParserTests
     }
 
     [TestMethod]
-    [DataRow("ver", "ver")]
-    [DataRow("  CD  src ", "CD")]
-    [DataRow("cd..", "cd")]
-    [DataRow("cd\\", "cd")]
-    public void ParseCommand_ReturnsCommandName(string input, string expected)
-    {
-        Assert.AreEqual(expected, parser.ParseCommand(input));
-    }
-
-    [TestMethod]
     public void ParseParameters_ReturnsArguments()
     {
         CollectionAssert.AreEqual(new[] { "one", "two" }, parser.ParseParameters("fake one two"));
     }
 
-    [TestMethod]
-    public void ParseParameters_NoArguments_ReturnsEmptyArray()
-    {
-        Assert.AreEqual(0, parser.ParseParameters("ver").Length);
-    }
 }

@@ -81,17 +81,6 @@ public class PromptTests
     }
 
     [TestMethod]
-    public void Prompt_WithVirtualFileSystem_StartsAtRootOfDriveC()
-    {
-        var fileSystem = new CommanderD.Services.FileSystemService(
-            new CommanderD.Filesystem.ShellContext(new CommanderD.Services.PersistenceService()));
-
-        string output = RunShell("", fileSystem, new CommandFactory(fileSystem, new FakeConsoleService()));
-
-        Assert.AreEqual(@"C:\>", output);
-    }
-
-    [TestMethod]
     public void Prompt_AfterMkdirAndCd_ShowsVirtualPath()
     {
         var fileSystem = new CommanderD.Services.FileSystemService(

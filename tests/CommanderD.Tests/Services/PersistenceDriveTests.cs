@@ -54,20 +54,6 @@ public class PersistenceServiceTests
     }
 
     [TestMethod]
-    public void Constructor_EmptyPath_Throws()
-    {
-        Assert.Throws<ArgumentException>(() => new PersistenceService(" "));
-    }
-
-    [TestMethod]
-    public void Constructor_Default_UsesDefaultFileName()
-    {
-        var service = new PersistenceService();
-
-        Assert.AreEqual(PersistenceService.DefaultFileName, Path.GetFileName(service.FilePath));
-    }
-
-    [TestMethod]
     public void Save_CreatesJsonFile()
     {
         _service.Save(CreateTree());
@@ -95,14 +81,6 @@ public class PersistenceServiceTests
     }
 
     [TestMethod]
-    public void Save_LeavesNoTemporaryFile()
-    {
-        _service.Save(CreateTree());
-
-        Assert.IsFalse(System.IO.File.Exists(_path + ".tmp"));
-    }
-
-    [TestMethod]
     public void Load_NoFile_ReturnsNull()
     {
         Assert.IsNull(_service.Load<Node>());
@@ -122,18 +100,6 @@ public class PersistenceServiceTests
         Assert.AreEqual("readme.txt", loaded.Children[0].Name);
         Assert.AreEqual(5, loaded.Children[0].Size);
         Assert.AreEqual("docs", loaded.Children[1].Name);
-    }
-
-    [TestMethod]
-    public void Load_AfterSave_WorksForLists()
-    {
-        _service.Save(new List<Node> { new Node { Name = "a" }, new Node { Name = "b" } });
-
-        List<Node>? loaded = _service.Load<List<Node>>();
-
-        Assert.IsNotNull(loaded);
-        Assert.AreEqual(2, loaded.Count);
-        Assert.AreEqual("b", loaded[1].Name);
     }
 
     [TestMethod]

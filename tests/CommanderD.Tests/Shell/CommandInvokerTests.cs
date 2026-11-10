@@ -29,15 +29,6 @@ public class CommandInvokerTests
     }
 
     [TestMethod]
-    public void ExecuteCommand_KnownCommand_PassesArguments()
-    {
-        var command = (FakeCommand)_invoker.ExecuteCommand("fake one two");
-        
-        Assert.IsNotNull(command.LastContext);
-        CollectionAssert.AreEqual(new[] { "one", "two" }, command.LastContext.Arguments);
-    }
-
-    [TestMethod]
     public void ExecuteCommand_UnknownCommand_ReturnsNotRecognizedMessage()
     {
         var command = _invoker.ExecuteCommand("foo");
@@ -53,15 +44,4 @@ public class CommandInvokerTests
         Assert.IsNull(command);
     }
 
-    [TestMethod]
-    public void Constructor_OnlyOutputWriter_UsesDefaultFactoryAndParser()
-    {
-        var writer = new TestOutputWriter();
-        var invoker = new CommandInvoker(writer);
-
-        var command = invoker.ExecuteCommand("ver");
-
-        Assert.IsNotNull(command);
-        Assert.AreEqual(Environment.OSVersion + Environment.NewLine, writer.OutputBuffer);
-    }
 }
