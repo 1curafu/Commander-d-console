@@ -137,7 +137,6 @@ public class TypeCommandTests
         Assert.AreEqual("HiHi", _outputWriter.OutputBuffer);
     }
 
-    // ---- Paths ----
 
     [TestMethod]
     public void Type_RelativePathIntoSubfolder_PrintsContent()
@@ -208,7 +207,6 @@ public class TypeCommandTests
         Assert.AreEqual("on drive D", _outputWriter.OutputBuffer);
     }
 
-    // ---- File does not exist ----
 
     [TestMethod]
     public void Type_MissingFile_ShowsFileNotFound()
@@ -255,7 +253,6 @@ public class TypeCommandTests
         Assert.AreEqual(FileNotFoundMessage, _outputWriter.OutputBuffer);
     }
 
-    // ---- Wrong number of arguments ----
 
     [TestMethod]
     public void Type_NoArgument_ShowsSyntaxMessage()
@@ -276,7 +273,6 @@ public class TypeCommandTests
         Assert.AreEqual(SyntaxMessage, _outputWriter.OutputBuffer);
     }
 
-    // ---- Through parser, factory and invoker (like typing it into the shell) ----
 
     private CommandInvoker CreateInvoker(TestOutputWriter writer)
     {
