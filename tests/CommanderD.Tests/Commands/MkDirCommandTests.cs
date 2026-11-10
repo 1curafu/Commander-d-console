@@ -35,7 +35,6 @@ public class MkDirCommandTests
         Assert.IsFalse(string.IsNullOrWhiteSpace(_command.Description));
     }
 
-    // ---- Criterion 1: directory does not exist -> created, nothing printed ----
 
     [TestMethod]
     public void MkDir_NewDirectory_CreatesDirectory()
@@ -83,7 +82,6 @@ public class MkDirCommandTests
         Assert.IsTrue(_fileSystem.DirectoryExists(Path.Combine(_work, "My Folder")));
     }
 
-    // ---- Criterion 2: directory already exists -> message ----
 
     [TestMethod]
     public void MkDir_ExistingDirectory_ShowsAlreadyExistsMessage()
@@ -128,7 +126,6 @@ public class MkDirCommandTests
         Assert.AreEqual(1, _fileSystem.CreateDirectoryCalls);
     }
 
-    // ---- Errors ----
 
     [TestMethod]
     public void MkDir_NoArgument_ShowsSyntaxMessage()
@@ -186,7 +183,6 @@ public class MkDirCommandTests
         Assert.ThrowsExactly<InvalidOperationException>(() => Run("NewFolder"));
     }
 
-    // ---- Through parser, factory and invoker (like typing it into the shell) ----
 
     private CommandInvoker CreateInvoker(TestOutputWriter writer)
     {

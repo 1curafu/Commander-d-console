@@ -22,6 +22,8 @@ public class CommandFactory
             { "ver", outputWriter => new VersionCommand(outputWriter) },
             { "mkdir", outputWriter => new MkDirCommand(fileSystemService, outputWriter) },
             { "md", outputWriter => new MkDirCommand(fileSystemService, outputWriter) },
+            { "mkfile", outputWriter => new MkFileCommand(fileSystemService, outputWriter) },
+            { "mf", outputWriter => new MkFileCommand(fileSystemService, outputWriter) },
             { "dir", outputWriter => new DirCommand(fileSystemService, outputWriter) },
             { "del", outputWriter => new DelCommand(fileSystemService, outputWriter) },
             { "color", outputWriter => new SetColorCommand(consoleService, outputWriter) },

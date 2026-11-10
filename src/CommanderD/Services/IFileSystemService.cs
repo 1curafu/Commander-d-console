@@ -14,6 +14,8 @@ public interface IFileSystemService
 
     void CreateDirectory(string path);
 
+    void CreateFile(string path, string content);
+
     void DeleteFile(string path);
 
     void Rename(string path, string newName);

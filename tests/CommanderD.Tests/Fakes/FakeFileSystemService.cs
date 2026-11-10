@@ -22,6 +22,12 @@ public class FakeFileSystemService : IFileSystemService
 
     public int CreateDirectoryCalls { get; private set; }
 
+    public Exception? CreateFileException { get; set; }
+
+    public int CreateFileCalls { get; private set; }
+
+    public string? CreatedFileContent { get; private set; }
+
     public Exception? DeleteFileException { get; set; }
 
     public int DeleteFileCalls { get; private set; }
@@ -99,6 +105,19 @@ public class FakeFileSystemService : IFileSystemService
         }
 
         directories.Add(path);
+    }
+
+    public void CreateFile(string path, string content)
+    {
+        CreateFileCalls++;
+
+        if (CreateFileException != null)
+        {
+            throw CreateFileException;
+        }
+
+        CreatedFileContent = content;
+        files.Add(path);
     }
 
     public void DeleteFile(string path)
