@@ -22,8 +22,11 @@ public class CommandFactory
             { "ver", outputWriter => new VersionCommand(outputWriter) },
             { "mkdir", outputWriter => new MkDirCommand(fileSystemService, outputWriter) },
             { "md", outputWriter => new MkDirCommand(fileSystemService, outputWriter) },
+            { "mkfile", outputWriter => new MkFileCommand(fileSystemService, outputWriter) },
+            { "mf", outputWriter => new MkFileCommand(fileSystemService, outputWriter) },
             { "dir", outputWriter => new DirCommand(fileSystemService, outputWriter) },
             { "del", outputWriter => new DelCommand(fileSystemService, outputWriter) },
+            { "delete", outputWriter => new DelCommand(fileSystemService, outputWriter) },
             { "color", outputWriter => new SetColorCommand(consoleService, outputWriter) },
             { "cls", outputWriter => new ClsCommand(consoleService, outputWriter) },
             { "clear", outputWriter => new ClsCommand(consoleService, outputWriter) },
@@ -31,7 +34,10 @@ public class CommandFactory
             { "type", outputWriter => new TypeCommand(fileSystemService, outputWriter) },
             { "ren", outputWriter => new RenCommand(fileSystemService, outputWriter) },
             { "rename", outputWriter => new RenCommand(fileSystemService, outputWriter) },
-            { "more", outputWriter => new MoreCommand(fileSystemService, outputWriter) },
+            { "more", outputWriter => new MoreCommand(fileSystemService, consoleService, outputWriter) },
+            { "find", outputWriter => new FindCommand(fileSystemService, outputWriter) },
+            { "move", outputWriter => new MoveCommand(fileSystemService, consoleService, outputWriter) },
+
         };
     }
 
